@@ -64,38 +64,6 @@ def main(robotIP, PORT=9559):
     # motionProxy.waitUntilMoveIsFinished()
     #time.sleep(1.0)
 
-    # A small step forwards and anti-clockwise with the left foot
-    # legName = ["LLeg", "RLeg"]
-    # X       = 0.04
-    # Y       = 0.1
-    # Theta   = 0.0
-    # footSteps = [[X, Y, Theta], [X, -Y, Theta]]
-    # timeList = [0.6, 2.4]
-    # clearExisting = False
-    # motionProxy.setFootSteps(legName, footSteps, timeList, clearExisting)
-    # debug = motionProxy.getFootSteps()
-    # print('Step 0')
-    # # print(debug[0])
-    # print('Unchangeable', debug[1])
-    # print('Changeable', debug[2])
-    # print('\n')
-    # time.sleep(0.6)
-    # debug = motionProxy.getFootSteps()
-    # print('Step 1')
-    # # print(debug[0])
-    # print('Unchangeable', debug[1])
-    # print('Changeable', debug[2])
-    # print('\n')
-    # time.sleep(0.6)
-    # # debug = motionProxy.getFootSteps()
-    # # print(debug[0])
-    # # print(debug[1])
-    # # print(debug[2])
-    # # print('\n')
-    # motionProxy.waitUntilMoveIsFinished()
-    # time.sleep(4.0)
-	# 4 footsteps with getFootSteps() printing out 'hopefully' relevant information
-
     # legName = ["LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg", "LLeg", "RLeg"]
     # X = 0.04
     # Y = 0.1
@@ -130,15 +98,6 @@ def main(robotIP, PORT=9559):
     #for x in range(0, 35):
     num_steps_to_send = 4
     legName, footSteps, timeList = createFootStepPlan(20, 0.6, "LLeg")
-    # print legName[0:num_steps_to_send]
-    # print '\n'
-    # print footSteps[0:num_steps_to_send]
-    # print '\n'
-    # print timeList[0:num_steps_to_send]
-    # print '\n'
-    # aLegName = legName[0:num_steps_to_send]
-    # aFootSteps = footSteps[0:num_steps_to_send]
-    # aTimeList = timeList[0:num_steps_to_send]
     clearExisting = True
     # motionProxy.setFootSteps(aLegName, aFootSteps, aTimeList, clearExisting)
     motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
