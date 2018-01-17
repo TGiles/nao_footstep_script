@@ -31,8 +31,8 @@ def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
             footstepList.append([x, y, theta])
             theta += 0.001
             LegFlag = 0
-    startTime = 0.6
-    timeList = [0.6]
+    startTime = 0.5
+    timeList = [0.5]
     for it in range(0, numOfSteps):
         startTime = startTime + timeBetweenStep
         timeList.append(startTime)
@@ -178,8 +178,8 @@ def main(robotIP, PORT=9559):
                     # TODO implement footstep update
                     # print('we can send update')
                     print 'Update flag set'
-                    print debug[1][0]
-                    print debug[1][0][1]
+                    # print debug[1][0]
+                    # print debug[1][0][1]
                     update_flag = True
                 if current != debug[1][0][0]:
                     # Leg transition has occurred
