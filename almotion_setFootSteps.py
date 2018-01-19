@@ -31,11 +31,11 @@ def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
             footstepList.append([x, y, theta])
             theta += 0.001
             LegFlag = 0
-    startTime = 0.5
-    timeList = [0.5]
+    startTime = timeBetweenStep
+    timeList = []
     for it in range(0, numOfSteps):
-        startTime = startTime + timeBetweenStep
         timeList.append(startTime)
+        startTime = startTime + timeBetweenStep
     return [legList, footstepList, timeList]
     
 
@@ -98,16 +98,20 @@ def main(robotIP, PORT=9559):
     #for x in range(0, 35):
     num_steps_to_send = 4
     legName, footSteps, timeList = createFootStepPlan(20, 0.6, "LLeg")
+    # print(footSteps, len(footSteps), 'footsteps')
+    # print(timeList, len(timeList), 'timeList')
     clearExisting = True
-    # motionProxy.setFootSteps(aLegName, aFootSteps, aTimeList, clearExisting)
+    # motionProxy.setFootSteps(legName, footSteps, timeList, clearExisting)
     motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
     time.sleep(1.0)
     cnt = 0
     footstep_count = 0
-    
-    current = None
+    currentUnchageable = None
+    currentChangeable = None
+
     # TESTING
     # flag = False
+
     # Loop assumes a valid plan was given before starting
     # NOTE Fix this later (1/16)
     flag = True
@@ -140,19 +144,29 @@ def main(robotIP, PORT=9559):
                     # print debug[1][0]
                     # print debug[1][0][1]
                     update_flag = True
-                if current != debug[1][0][0]:
+                if currentUnchageable != debug[1][0][0]:
                     # Leg transition has occurred
                     # Update footstep_count for indexing the
                     # global footstep plan
-                    current = debug[1][0][0]
+                    currentUnchageable = debug[1][0][0]
                     footstep_count = footstep_count + 1
                     print('Leg changed, number', footstep_count)
-                elif current == debug[1][0][0] and update_flag:
+                elif currentUnchageable == debug[1][0][0] and update_flag:
                     if footstep_count == len(footSteps):
                         continue
+                    if footstep_count+num_steps_to_send > len(footSteps):
+                        motionProxy.setFootSteps(
+                            legName[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                            footSteps[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                            timeList[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                            True
+                        )
+                        print('Almost finished')
+                        print(num_steps_to_send - (footstep_count%num_steps_to_send), 'Steps left')
                     # Need to talk to DC about what this elif should be
                     # NOTE: only sends plan when the previous plan is exhausted which isn't intended behavior
-                    elif footstep_count % num_steps_to_send == 0:
+                    else:
+                        print(debug[2][0], 'first changeable step')
                         motionProxy.setFootSteps(
                             legName[footstep_count:footstep_count+num_steps_to_send],
                             footSteps[footstep_count:footstep_count+num_steps_to_send],
