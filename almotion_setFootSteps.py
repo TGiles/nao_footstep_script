@@ -97,7 +97,9 @@ def main(robotIP, PORT=9559):
     # flag = True
     #for x in range(0, 35):
     num_steps_to_send = 4
-    legName, footSteps, timeList = createFootStepPlan(20, 0.6, "LLeg")
+    legName, footSteps, timeList = createFootStepPlan(50, 0.6, "LLeg")
+    num_steps_in_plan = len(footSteps)
+
     # print(footSteps, len(footSteps), 'footsteps')
     # print(timeList, len(timeList), 'timeList')
     clearExisting = True
@@ -105,8 +107,8 @@ def main(robotIP, PORT=9559):
     motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
     time.sleep(1.0)
     cnt = 0
-    footstep_count = 0
-    currentUnchageable = None
+    footstep_count = -1
+    currentUnchangeable = None
     currentChangeable = None
 
     # TESTING
@@ -116,9 +118,10 @@ def main(robotIP, PORT=9559):
     # NOTE Fix this later (1/16)
     flag = True
     while (flag):
-        print('Iteration', cnt)
         # time.sleep(0.1)
+        print 'Iteration', cnt,
         debug = motionProxy.getFootSteps()
+
         # print('Unchangeable', debug[1])
         # print('Changeable', debug[2])
         # print('Unchangeable:')
@@ -134,46 +137,104 @@ def main(robotIP, PORT=9559):
         #     motionProxy.setFootSteps(newLegName, newFootSteps, newTimeList, True)
         #     print('Add new footstep plan')
         #     footstep_count = footstep_count + 1000
-        if (debug is not None and len(debug) > 1):
+        if (debug is not None):
+          print '  len(debug)=',len(debug) 
+          if(len(debug) > 1):
+            print '  len(debug[1])=',len(debug[1]) 
+             
             if (len(debug[1]) > 0):
                 update_flag = False
-                if debug[1][0][1] > 0.08:
+                if debug[1][0][1] > 0.18 or (debug[1][0][1] < 0.15 and debug[1][0][1] > 0.08):
                     # TODO implement footstep update
                     # print('we can send update')
                     print 'Update flag set'
                     # print debug[1][0]
                     # print debug[1][0][1]
                     update_flag = True
-                if currentUnchageable != debug[1][0][0]:
+                verbose = False
+                if currentUnchangeable != debug[1][0][0]:
                     # Leg transition has occurred
                     # Update footstep_count for indexing the
                     # global footstep plan
-                    currentUnchageable = debug[1][0][0]
+                    currentUnchangeable = debug[1][0][0]
                     footstep_count = footstep_count + 1
-                    print('Leg changed, number', footstep_count)
-                elif currentUnchageable == debug[1][0][0] and update_flag:
-                    if footstep_count == len(footSteps):
-                        continue
-                    if footstep_count+num_steps_to_send > len(footSteps):
+                    verbose = True
+
+                if (len(debug[2]) > 0):
+                    if currentChangeable != debug[2][0][0]:
+                        # First changeable step in queue has changed
+                        # Figure out what the new step is and move the pointer
+                        currentChangeable = debug[2][0][0]
+                        verbose = True
+
+                if verbose or update_flag:
+                    #print('Unchangeable step changed, number', footstep_count)
+                    print '  verbose=',verbose, '   update_flag=',update_flag
+                    print '  Unchangable step ', currentUnchangeable, 'footstep_count', footstep_count
+                    print '  Changeable step  ', currentChangeable
+                    print '  Current data:'
+                    print '     Unchangable:'
+                    for step in debug[1]:
+                        print'         ', step
+                    print '     Changeable:'
+                    for step in debug[2]:
+                        print'         ', step
+                    print '    Vector length - change -> unchange', len(debug[1]), len(debug[2])
+                    print '\n'
+
+                if update_flag:
+                    startIndex = footstep_count+len(debug[1])
+                    endIndex = startIndex + num_steps_to_send
+                    if (endIndex > num_steps_in_plan):
+                        endIndex = num_steps_in_plan 
+
+                    # if footstep_count == len(footSteps):
+                    #     continue
+                    if startIndex < endIndex:
                         motionProxy.setFootSteps(
-                            legName[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
-                            footSteps[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
-                            timeList[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                            legName[  startIndex: endIndex],
+                            footSteps[startIndex: endIndex],
+                            timeList[ startIndex: endIndex],
                             True
                         )
-                        print('Almost finished')
-                        print(num_steps_to_send - (footstep_count%num_steps_to_send), 'Steps left')
+                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', footSteps[startIndex]
+
+
+                    # if footstep_count+num_steps_to_send > len(footSteps):
+                    #     # motionProxy.setFootSteps(
+                    #     #     legName[footstep_count+len(debug[1]):footstep_count+len(debug[1]) + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     footSteps[footstep_count+len(debug[1]):footstep_count+len(debug[1]) + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     timeList[footstep_count+len(debug[1]):footstep_count+len(debug[1]) + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     True
+                    #     # )
+                    #     # motionProxy.setFootSteps(
+                    #     #     legName[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     footSteps[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     timeList[footstep_count:footstep_count + num_steps_to_send - (footstep_count % num_steps_to_send)],
+                    #     #     True
+                    #     # )
+                    #     # print('Almost finished')
+                    #     print num_steps_to_send - (footstep_count%num_steps_to_send), 'Steps left'
+                    #     print footSteps[footstep_count+len(debug[1]):footstep_count+len(debug[1]) + num_steps_to_send - (footstep_count % num_steps_to_send)]
+                    #     # time.sleep(0.2)
                     # Need to talk to DC about what this elif should be
                     # NOTE: only sends plan when the previous plan is exhausted which isn't intended behavior
-                    else:
-                        print(debug[2][0], 'first changeable step')
-                        motionProxy.setFootSteps(
-                            legName[footstep_count:footstep_count+num_steps_to_send],
-                            footSteps[footstep_count:footstep_count+num_steps_to_send],
-                            timeList[footstep_count:footstep_count+num_steps_to_send],
-                            True
-                        )
-                        print('New plan sent')
+                    # else:
+                    #     # print(debug[2][0], 'first changeable step')
+                    #     motionProxy.setFootSteps(
+                    #         legName[footstep_count+len(debug[1]):footstep_count+len(debug[1])+num_steps_to_send],
+                    #         footSteps[footstep_count+len(debug[1]):footstep_count+len(debug[1])+num_steps_to_send],
+                    #         timeList[footstep_count+len(debug[1]):footstep_count+len(debug[1])+num_steps_to_send],
+                    #         True
+                    #     )
+                        # time.sleep(0.2)
+                        # motionProxy.setFootSteps(
+                        #     legName[footstep_count:footstep_count+num_steps_to_send],
+                        #     footSteps[footstep_count:footstep_count+num_steps_to_send],
+                        #     timeList[footstep_count:footstep_count+num_steps_to_send],
+                        #     True
+                        # )
+                        # print 'New plan sent', '    First Changeable New Plan', debug[2][0]
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
                 # Stop the loop, as there are no footsteps left
                 flag = False
