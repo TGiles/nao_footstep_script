@@ -6,7 +6,7 @@ from naoqi import ALProxy
 robotIP = "192.168.10.110"
 
 # Creates a straight line walking path
-def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
+def createStraightFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
     LegFlag = None
     if startLeg == "RLeg":
         LegFlag = 0
@@ -17,7 +17,7 @@ def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
     y = 0.1
     # In order to keep a track of which internal footstep is being executed, going to naively use theta
     # until I determine a better route
-    theta = 0.001
+    theta = 0.0
     legList = []
     footstepList = []
     for it in range(0, numOfSteps):
@@ -40,7 +40,7 @@ def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
     
 
 
-def main(robotIP, PORT=9559):
+def main(robotIP, PORT=9559, outputFile):
 
     motionProxy  = ALProxy("ALMotion", robotIP, PORT)
     postureProxy = ALProxy("ALRobotPosture", robotIP, PORT)
@@ -51,8 +51,12 @@ def main(robotIP, PORT=9559):
     # Send robot to Pose Init
     postureProxy.goToPosture("StandInit", 0.5)
 
+    useSensorValues = True
+    initRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
+    print "Robot Position", initRobotPosition
+
     num_steps_to_send = 4
-    legName, footSteps, timeList = createFootStepPlan(50, 0.6, "LLeg")
+    legName, footSteps, timeList = createStraightFootStepPlan(50, 0.6, "LLeg")
     num_steps_in_plan = len(footSteps)
     clearExisting = True
     motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
@@ -107,6 +111,7 @@ def main(robotIP, PORT=9559):
                     for step in debug[2]:
                         print'         ', step
                     print '    Vector length - change -> unchange', len(debug[1]), len(debug[2])
+                    print '    Current absolute robot position:,' almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
                     print '\n'
 
                 if update_flag:
@@ -127,6 +132,10 @@ def main(robotIP, PORT=9559):
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
                 # Stop the loop, as there are no footsteps left
                 flag = False
+                endRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
+                robotMove = almath.pose2DInverse(initRobotPosition)*endRobotPosition
+                print '    Robot Move:', robotMove
+                print '    End Robot Position:', endRobotPosition
         cnt = cnt + 1
     # Go to rest position
 
@@ -139,6 +148,6 @@ if __name__ == "__main__":
                         help="Robot ip address")
     parser.add_argument("--port", type=int, default=9559,
                         help="Robot port number")
-
+    parser.add_argument("--file", type=str, help="File to write output")
     args = parser.parse_args()
-    main(args.ip, args.port)
+    main(args.ip, args.port, args.file)

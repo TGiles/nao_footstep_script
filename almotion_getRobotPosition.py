@@ -17,20 +17,35 @@ def main(robotIP, PORT=9559):
     # Example showing how to get a simplified robot position in world.
     useSensorValues = False
     result = motionProxy.getRobotPosition(useSensorValues)
-    print "Robot Position", result
+    print "Simple Robot Position", result
 
     # Example showing how to use this information to know the robot's diplacement.
-    useSensorValues = False
+    useSensorValues = True
     initRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
-
+    print "Robot Position", initRobotPosition
     # Make the robot move
-    motionProxy.moveTo(0.1, 0.0, 0.2)
+    # motionProxy.moveTo(0.1, 0.0, 0.2)
+
+    # 4 foot (4 Ft, 48 in)
+    # x = 1.2192
+    # y = 0
+    # theta = 0
+    # print x, y, theta
+    # motionProxy.moveTo(x, y, theta)
+
+    # 2 foot (2 ft, 24in)
+    x = 0.6096
+    y = 0
+    theta = 0
+    print "Move to commands:", x, y, theta
+    motionProxy.moveTo(x, y, theta)
 
     endRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
 
     # Compute robot's' displacement
     robotMove = almath.pose2DInverse(initRobotPosition)*endRobotPosition
     print "Robot Move:", robotMove
+    print "End Robot Position:", motionProxy.getRobotPosition(useSensorValues)
 
     # Go to rest position
     motionProxy.rest()
