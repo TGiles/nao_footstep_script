@@ -88,6 +88,7 @@ def createLocalPlanFromGlobal(legList, footstepList, timeList):
     _legList = []
     _footstepList = []
     _timeList = []
+    y_value = footstepList[0][1]
     if legList[0] == 'RLeg':
         LegFlag = 0
     else:
@@ -96,9 +97,8 @@ def createLocalPlanFromGlobal(legList, footstepList, timeList):
         if LegFlag == 0:
             _legList.append('RLeg')
             x = footstepList[it+1][0] - footstepList[it][0]
-            y = footstepList[it+1][1] - footstepList[it][1]
             theta = footstepList[it+1][2] - footstepList[it][2]
-            _footstepList.append([x, -y, theta])
+            _footstepList.append([x, -y_value, theta])
 
 data = [['LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg'], [0.6, 1.2, 1.7999999999999998, 2.4, 3.0, 3.6, 4.2, 4.8, 5.3999999999999995, 5.999999999999999], [[0.06, 0.11,0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0]]]
 # print data
