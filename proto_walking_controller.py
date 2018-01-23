@@ -120,17 +120,27 @@ def createLocalPlanFromGlobal(legList, footstepList, timeList):
     _legList = []
     _footstepList = []
     _timeList = []
+    y_value = footstepList[0][1]
     if legList[0] == 'RLeg':
         LegFlag = 0
     else:
         LegFlag = 1
     for it in range(0, length-1):
+        x = 0
         if LegFlag == 0:
             _legList.append('RLeg')
             x = footstepList[it+1][0] - footstepList[it][0]
-            y = footstepList[it+1][1] - footstepList[it][1]
             theta = footstepList[it+1][2] - footstepList[it][2]
-            _footstepList.append([x, -y, theta])
+            _footstepList.append([x, -y_value, theta])
+            LegFlag = 1
+        elif LegFlag == 1:
+            _legList.append('LLeg')
+            x = footstepList[it+1][0] - footstepList[it][0]
+            theta = footstepList[it+1][2] - footstepList[it][2]
+            _footstepList.append([x, y_value, theta])
+            LegFlag = 0
+
+    return [_legList, _footstepList, timeList]
 
 def main(robotIP, outputFile, PORT=9559):
     print experiment_dir
