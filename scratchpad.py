@@ -1,3 +1,5 @@
+import os, errno
+import datetime
 import itertools
 def createFootStepPlan(numOfSteps, timeBetweenStep, startLeg='RLeg'):
     LegFlag = None
@@ -82,6 +84,7 @@ def createStraightGlobalPlan(numOfSteps, timeBetweenStep, startLeg='RLeg'):
         startTime += timeBetweenStep
     return [legList, footstepList, timeList]
 
+
 def createLocalPlanFromGlobal(legList, footstepList, timeList):
     length = len(legList)
     LegFlag = None
@@ -93,76 +96,59 @@ def createLocalPlanFromGlobal(legList, footstepList, timeList):
         LegFlag = 0
     else:
         LegFlag = 1
-    for it in range(0, length-1):
+    for thing in footstepList:
+        print thing
+    for it in range(0, length):
+        print 'iterator', it
         x = 0
         if LegFlag == 0:
             _legList.append('RLeg')
-            x = footstepList[it+1][0] - footstepList[it][0]
-            theta = footstepList[it+1][2] - footstepList[it][2]
-            _footstepList.append([x, -y_value, theta])
+            if it == 0:
+                x = footstepList[it][0]
+                theta = footstepList[it][0]
+                _footstepList.append([x, -y_value, theta])
+            else:
+                x = footstepList[it][0] - footstepList[it-1][0]
+                theta = footstepList[it][2] - footstepList[it-1][2]
+                _footstepList.append([x, -y_value, theta])
             LegFlag = 1
         elif LegFlag == 1:
             _legList.append('LLeg')
-            x = footstepList[it+1][0] - footstepList[it][0]
-            theta = footstepList[it+1][2] - footstepList[it][2]
-            _footstepList.append([x, y_value, theta])
+            if it == 0:
+                x = footstepList[it][0]
+                theta = footstepList[it][0]
+                _footstepList.append([x, -y_value, theta])
+            else:
+                x = footstepList[it][0] - footstepList[it-1][0]
+                theta = footstepList[it][2] - footstepList[it-1][2]
+                _footstepList.append([x, y_value, theta])
             LegFlag = 0
-
     return [_legList, _footstepList, timeList]
 
 
-def createStraightFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
-    LegFlag = None
-    if startLeg == "RLeg":
-        LegFlag = 0
-    else:
-        LegFlag = 1
-    
-    # x = 0.04
-    x= 0.06
-    y = 0.11
-    # In order to keep a track of which internal footstep is being executed, going to naively use theta
-    # until I determine a better route
-    theta = 0.0
-    legList = []
-    footstepList = []
-    for it in range(0, numOfSteps):
-        if LegFlag == 0:
-            legList.append("RLeg")
-            footstepList.append([x, -y, theta])
-            # theta += 0.001
-            LegFlag = 1
-        elif LegFlag == 1:
-            legList.append("LLeg")
-            footstepList.append([x, y, theta])
-            # theta += 0.001
-            LegFlag = 0
-    startTime = timeBetweenStep
-    timeList = []
-    for it in range(0, numOfSteps):
-        timeList.append(startTime)
-        startTime = startTime + timeBetweenStep
-    return [legList, footstepList, timeList]
+# data = [['LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg'], [0.6, 1.2, 1.7999999999999998, 2.4, 3.0, 3.6, 4.2, 4.8, 5.3999999999999995, 5.999999999999999], [[0.06, 0.11,0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0]]]
+# # print data
+# # flat_data = list(itertools.chain.from_iterable(data))
+# # print flat_data 
+# # length = len(data[0])
+# # print length
+# legList, footstepList, timeList = createStraightGlobalPlan(10, 0.6, 'LLeg')
 
+# print 'Global legList', legList
+# print 'Global footstepList', footstepList
+# print 'Global timeList', timeList
+# a, b, c = createLocalPlanFromGlobal(legList, footstepList, timeList)
+# print
+# print 'Transform legList', a
+# print 'Transform footstepList', b
+# print 'Transform timeList', c
+# print
+# d, e, f = createStraightFootStepPlan(10, 0.6, 'LLeg')
+# print 'Local legList', d
+# print 'Local footstepList', e
+# print 'Local timeList', f
 
-data = [['LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg', 'LLeg', 'RLeg'], [0.6, 1.2, 1.7999999999999998, 2.4, 3.0, 3.6, 4.2, 4.8, 5.3999999999999995, 5.999999999999999], [[0.06, 0.11,0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0], [0.06, 0.11, 0.0], [0.06, -0.11, 0.0]]]
-# print data
-# flat_data = list(itertools.chain.from_iterable(data))
-# print flat_data 
-# length = len(data[0])
-# print length
 legList, footstepList, timeList = createStraightGlobalPlan(10, 0.6, 'LLeg')
-
-print 'Global legList', legList
-print 'Global footstepList', footstepList
-print 'Global timeList', timeList
-a, b, c = createLocalPlanFromGlobal(legList, footstepList, timeList)
-print
-print 'Transform legList', a
-print 'Transform footstepList', b
-print 'Transform timeList', c
-print
-d, e, f = createStraightFootStepPlan(10, 0.6, 'LLeg')
-print 'Local legList', d
-print 'Local footstepList', e
-print 'Local timeList', f
+print 'global footstepList length', len(footstepList)
+_leg, _foot, _time = createLocalPlanFromGlobal(legList, footstepList, timeList)
+print 'local footstepList length', len(_leg)

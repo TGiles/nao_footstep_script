@@ -1,8 +1,0 @@
-[I] 29476 qimessaging.session: Session listener created on tcp://0.0.0.0:0
-[I] 29476 qimessaging.transportserver: TransportServer will listen on: tcp://192.168.10.103:44193
-[I] 29476 qimessaging.transportserver: TransportServer will listen on: tcp://127.0.0.1:44193
-Simple Robot Position [5.515247821807861, 0.5472620725631714, 0.09467529505491257]
-Robot Position Pose2D(x=5.51479, y=0.548665, theta=0.0939022)
-Move to commands: 0.6096 0 0
-Robot Move: Pose2D(x=0.609928, y=-0.00088042, theta=-0.000297919)
-End Robot Position: [6.12211275100708, 0.6049782633781433, 0.09360431879758835]
