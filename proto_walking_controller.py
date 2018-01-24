@@ -41,7 +41,7 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
     step data (include foot locations)
     num steps in unchangeable
     unchangeable vector
-    1st step unchangeable 
+    1st step unchangeable
     1st step changeable
     'Iteration',
     'World x',
@@ -74,7 +74,7 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
     # Need to check that changeable vector length is > 0, otherwise need to print N/A or something
     if len(footstep[2]) > 0:
         writerObj.writerow([
-        iteration_num, 
+        iteration_num,
         currentRobotPose[0],
         currentRobotPose[1],
         currentRobotPose[2],
@@ -99,7 +99,7 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
         ])
     else:
         writerObj.writerow([
-        iteration_num, 
+        iteration_num,
         currentRobotPose[0],
         currentRobotPose[1],
         currentRobotPose[2],
@@ -133,7 +133,7 @@ def createStraightFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
         LegFlag = 0
     else:
         LegFlag = 1
-    
+
     # x = 0.04
     x= 0.06
     y = 0.11
@@ -249,10 +249,10 @@ def writeSummaryCSV(parameter_list, experiment_dir, test_dir):
         writer = csv.writer(csvFile, delimiter=',')
         writer.writerow([test_dir])
         writer.writerow(['Number of steps in plan', 'Time between steps', 'Iterations through main loop',
-        'Initial x', 'Initial y', 'Initial theta', 'Final x', 'Final y', 'Final theta', 
+        'Initial x', 'Initial y', 'Initial theta', 'Final x', 'Final y', 'Final theta',
         'Delta x', 'Delta y', 'Delta theta'])
-        writer.writerow([ parameter_list[0], parameter_list[1], parameter_list[2], 
-        parameter_list[3][0], parameter_list[3][1], parameter_list[3][2], 
+        writer.writerow([ parameter_list[0], parameter_list[1], parameter_list[2],
+        parameter_list[3][0], parameter_list[3][1], parameter_list[3][2],
         parameter_list[4][0], parameter_list[4][1], parameter_list[4][2],
         parameter_list[5].x, parameter_list[5].y, parameter_list[5].theta ])
 
@@ -276,14 +276,14 @@ def main(robotIP, PORT=9559):
     step data (include foot locations)
     num steps in unchangeable
     unchangeable vector
-    1st step unchangeable 
+    1st step unchangeable
     1st step changeable
     '''
     file_writer.writerow([
         'Iteration',
         'World x',
         'World y',
-        'World theta', 
+        'World theta',
         'World LFoot x',
         'World LFoot y',
         'World LFoot theta',
@@ -303,7 +303,7 @@ def main(robotIP, PORT=9559):
         'Verbose',
         'New plan sent?'
     ])
-    # file_writer.writerow(['Leg Name', 'Relative x', 'Relative y', 'Relative theta', 
+    # file_writer.writerow(['Leg Name', 'Relative x', 'Relative y', 'Relative theta',
     #                                 'World x', 'World y', 'World theta'])
     motionProxy  = ALProxy("ALMotion", robotIP, PORT)
     postureProxy = ALProxy("ALRobotPosture", robotIP, PORT)
@@ -325,12 +325,16 @@ def main(robotIP, PORT=9559):
     num_steps_straight_plan = 10
     time_between_step = 0.6
     start_leg = 'LLeg'
+
     # legName, footSteps, timeList = createStraightFootStepPlan(10, 0.6, "LLeg")
     #NOTE using local plan as global to test CSV writer
     globalLegName, globalFootSteps, globalTimeList = createStraightGlobalPlan(
         num_steps_straight_plan,
         time_between_step,
         start_leg)
+
+
+
     writeGlobalPlan(globalLegName, globalFootSteps, globalTimeList, experiment_dir, test_dir)
     legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
     num_steps_in_plan = len(footSteps)
@@ -345,22 +349,23 @@ def main(robotIP, PORT=9559):
     # Loop assumes a valid plan was given before starting
     # NOTE Fix this later (1/16)
     flag = True
-    
+
     while (flag):
         # time.sleep(0.1)
         plan_sent_flag = False
         print 'Iteration', cnt,
         debug = motionProxy.getFootSteps()
         if (debug is not None):
-          # print '  len(debug)=',len(debug) 
+          # print '  len(debug)=',len(debug)
           if(len(debug) > 1):
-            # print '  len(debug[1])=',len(debug[1]) 
-             
+            # print '  len(debug[1])=',len(debug[1])
+
             if (len(debug[1]) > 0):
                 update_flag = False
                 if debug[1][0][1] > 0.18 or (debug[1][0][1] < 0.15 and debug[1][0][1] > 0.08):
                     print 'Update flag set'
                     update_flag = True
+
                 verbose = False
                 if currentUnchangeable[0] != debug[1][0][0]:
                     # Leg transition has occurred
@@ -372,36 +377,18 @@ def main(robotIP, PORT=9559):
                     footstep_count = footstep_count + 1
                     verbose = True
 
-                    # Should writeCSVFootstepsExecuted run before or after verbose assignment?
-
-                    writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
-
                 if (len(debug[2]) > 0):
                     if currentChangeable[0] != debug[2][0][0]:
                         # First changeable step in queue has changed
                         # Figure out what the new step is and move the pointer
                         currentChangeable = debug[2][0]
                         verbose = True
-                        writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
-
-                if verbose or update_flag:
-                    print 'Current velocity:', motionProxy.getRobotVelocity()
-                    writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
-                    # printHelper(
-                    #     verbose, 
-                    #     update_flag,
-                    #     currentUnchangeable,
-                    #     currentChangeable,
-                    #     debug,
-                    #     useSensorValues,
-                    #     footstep_count,
-                    #     motionProxy)
 
                 if update_flag:
                     startIndex = footstep_count+len(debug[1])
                     endIndex = startIndex + num_steps_to_send
                     if (endIndex > num_steps_in_plan):
-                        endIndex = num_steps_in_plan 
+                        endIndex = num_steps_in_plan
 
                     if startIndex < endIndex:
                         motionProxy.setFootSteps(
@@ -414,38 +401,60 @@ def main(robotIP, PORT=9559):
                         plan_sent_flag = True
                         writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
 
+                if verbose or plan_sent_flag:
+                    print 'Current velocity:', motionProxy.getRobotVelocity()
+                    writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
+                    # printHelper(
+                    #     verbose,
+                    #     update_flag,
+                    #     currentUnchangeable,
+                    #     currentChangeable,
+                    #     debug,
+                    #     useSensorValues,
+                    #     footstep_count,
+                    #     motionProxy)
+
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
                 # Stop the loop, as there are no footsteps left
                 flag = False
-                file_writer = None
-                file_obj.close()
-                endRobotPosition = motionProxy.getRobotPosition(useSensorValues)
-                endRobotPose = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
-                #init frame calc
-                robotMove = almath.pose2DInverse(initRobotPose)*endRobotPose
-                print '    Robot Move:', robotMove
-                print '    End Robot Position:', endRobotPosition
-                with open(experiment_dir+"/"+test_dir+"/drift.csv", 'w+') as csvFile:
-                    writer = csv.writer(csvFile, delimiter=',')
-                    writer.writerow([test_dir])
-                    writer.writerow(['Initial x', 'Initial y', 'Initial theta', 
-                                     'Final x'  , 'Final y'  , 'Final theta', 
-                                     'Delta x'  , 'Delta y'  , 'Delta theta'])
-                    writer.writerow([initRobotPosition[0], initRobotPosition[1],
-                    initRobotPosition[2], endRobotPosition[0], endRobotPosition[1],
-                    endRobotPosition[2], robotMove.x, robotMove.y, robotMove.theta])
-                writeSummaryCSV([
-                    len(footSteps),
-                    timeList[0],
-                    cnt,
-                    initRobotPosition,
-                    endRobotPosition,
-                    robotMove
-                ], experiment_dir, test_dir)
+
         cnt = cnt + 1
     # Go to rest position
 
+    #
+    print ' wait for move to finish ... '
     motionProxy.waitUntilMoveIsFinished()
+
+    # Get final data after walking is verified finished
+    print ' get final data and write the summary file ...'
+    file_writer = None
+    file_obj.close()
+    endRobotPosition = motionProxy.getRobotPosition(useSensorValues)
+    endRobotPose = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
+    #init frame calc
+    robotMove = almath.pose2DInverse(initRobotPose)*endRobotPose
+    print '    Robot Move:', robotMove
+    print '    End Robot Position:', endRobotPosition
+    with open(experiment_dir+"/"+test_dir+"/drift.csv", 'w+') as csvFile:
+        writer = csv.writer(csvFile, delimiter=',')
+        writer.writerow([test_dir])
+        writer.writerow(['Initial x', 'Initial y', 'Initial theta',
+                         'Final x'  , 'Final y'  , 'Final theta',
+                         'Delta x'  , 'Delta y'  , 'Delta theta'])
+        writer.writerow([initRobotPosition[0], initRobotPosition[1],
+        initRobotPosition[2], endRobotPosition[0], endRobotPosition[1],
+        endRobotPosition[2], robotMove.x, robotMove.y, robotMove.theta])
+    writeSummaryCSV([
+        len(footSteps),
+        timeList[0],
+        cnt,
+        initRobotPosition,
+        endRobotPosition,
+        robotMove
+    ], experiment_dir, test_dir)
+
+    # Robot to crouch position
+    print '  Move robot to rest position ... '
     motionProxy.rest()
 
 if __name__ == "__main__":
