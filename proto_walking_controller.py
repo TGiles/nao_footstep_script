@@ -6,6 +6,8 @@ import os
 import argparse
 import almath
 import csv
+from footstep_helper import *
+
 from naoqi import ALProxy
 robotIP = '192.168.10.110'
 
@@ -24,19 +26,11 @@ def printHelper(verbose, update_flag, currentUnchangeable, currentChangeable,foo
     print '    Current world frame robot position:', almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
     print '\n'
 
-def writeGlobalPlan(leg_array, footstep_array, time_array, experiment_dir, test_dir):
-    with open(experiment_dir+'/'+ test_dir + '/global-plan.csv', 'w+') as csvFile:
-        writer = csv.writer(csvFile, delimiter=',')
-        writer.writerow([test_dir])
-        writer.writerow(['Leg Name', 'Execution Time', 'X', 'Y', 'Theta'])
-        length = len(leg_array)
-        for x in range(0, length):
-            writer.writerow([ leg_array[x], time_array[x], footstep_array[x][0], footstep_array[x][1], footstep_array[x][2] ])
 
-
-def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPose, update_flag, verbose, plan_sent_flag):
+def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time, currentRobotPose, update_flag, verbose, plan_sent_flag):
     ''' Should write:
     iteration num
+    elapsed time
     body pose from robot pose
     step data (include foot locations)
     num steps in unchangeable
@@ -75,6 +69,7 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
     if len(footstep[2]) > 0:
         writerObj.writerow([
         iteration_num,
+        elapsed_time,
         currentRobotPose[0],
         currentRobotPose[1],
         currentRobotPose[2],
@@ -100,6 +95,7 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
     else:
         writerObj.writerow([
         iteration_num,
+        elapsed_time,
         currentRobotPose[0],
         currentRobotPose[1],
         currentRobotPose[2],
@@ -123,118 +119,6 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, currentRobotPo
         plan_sent_flag
         ])
 
-
-
-# Creates a straight line walking path
-# NOTE Creates a local plan NOT global plan
-def createStraightFootStepPlan(numOfSteps, timeBetweenStep, startLeg="RLeg"):
-    LegFlag = None
-    if startLeg == "RLeg":
-        LegFlag = 0
-    else:
-        LegFlag = 1
-
-    # x = 0.04
-    x= 0.06
-    y = 0.11
-    # In order to keep a track of which internal footstep is being executed, going to naively use theta
-    # until I determine a better route
-    theta = 0.0
-    legList = []
-    footstepList = []
-    for it in range(0, numOfSteps):
-        if LegFlag == 0:
-            legList.append("RLeg")
-            footstepList.append([x, -y, theta])
-            # theta += 0.001
-            LegFlag = 1
-        elif LegFlag == 1:
-            legList.append("LLeg")
-            footstepList.append([x, y, theta])
-            # theta += 0.001
-            LegFlag = 0
-    startTime = timeBetweenStep
-    timeList = []
-    for it in range(0, numOfSteps):
-        timeList.append(startTime)
-        startTime = startTime + timeBetweenStep
-    return [legList, footstepList, timeList]
-
-
-def createStraightGlobalPlan(numOfSteps, timeBetweenStep, startLeg='RLeg'):
-    LegFlag = None
-    if startLeg == 'RLeg':
-        LegFlag = 0
-    else:
-        LegFlag = 1
-    x = 0.06
-    # y is essentially the distance between the feet, so should remain a constant (I guess)
-    y = 0.1
-    theta = 0.0
-    x_inc = x
-    y_inc = y
-    theta_inc = theta
-    legList = []
-    footstepList = []
-    for it in range(0, numOfSteps):
-        if LegFlag == 0:
-            legList.append('RLeg')
-            footstepList.append([x, -y, theta])
-            x += x_inc
-            # Don't need theta for straight lines
-            # theta += theta_inc
-            LegFlag = 1
-        elif LegFlag == 1:
-            legList.append('LLeg')
-            footstepList.append([x, y, theta])
-            x += x_inc
-            # Don't need theta for straight lines
-            # theta += theta_inc
-            LegFlag = 0
-    startTime = timeBetweenStep
-    timeList = []
-    for it in range(0, numOfSteps):
-        timeList.append(startTime)
-        startTime += timeBetweenStep
-    return [legList, footstepList, timeList]
-
-
-def createLocalPlanFromGlobal(legList, footstepList, timeList):
-    length = len(legList)
-    LegFlag = None
-    _legList = []
-    _footstepList = []
-    _timeList = []
-    y_value = footstepList[0][1]
-    if legList[0] == 'RLeg':
-        LegFlag = 0
-    else:
-        LegFlag = 1
-    for it in range(0, length):
-        x = 0
-        if LegFlag == 0:
-            _legList.append('RLeg')
-            if it == 0:
-                x = footstepList[it][0]
-                theta = footstepList[it][0]
-                _footstepList.append([x, -y_value, theta])
-            else:
-                x = footstepList[it][0] - footstepList[it-1][0]
-                theta = footstepList[it][2] - footstepList[it-1][2]
-                _footstepList.append([x, -y_value, theta])
-            LegFlag = 1
-        elif LegFlag == 1:
-            _legList.append('LLeg')
-            if it == 0:
-                x = footstepList[it][0]
-                theta = footstepList[it][0]
-                _footstepList.append([x, -y_value, theta])
-            else:
-                x = footstepList[it][0] - footstepList[it-1][0]
-                theta = footstepList[it][2] - footstepList[it-1][2]
-                _footstepList.append([x, y_value, theta])
-            LegFlag = 0
-    return [_legList, _footstepList, timeList]
 
 
 def writeSummaryCSV(parameter_list, experiment_dir, test_dir):
@@ -349,6 +233,7 @@ def main(robotIP, PORT=9559):
     # Loop assumes a valid plan was given before starting
     # NOTE Fix this later (1/16)
     flag = True
+    time_start = time.time()
 
     while (flag):
         # time.sleep(0.1)
@@ -399,11 +284,12 @@ def main(robotIP, PORT=9559):
                         )
                         print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', footSteps[startIndex]
                         plan_sent_flag = True
-                        writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
 
                 if verbose or plan_sent_flag:
+                    elapsed_time = time.time() - time_start
+
                     print 'Current velocity:', motionProxy.getRobotVelocity()
-                    writeCSVFootstepsExecuted(file_writer, debug, cnt, currentRobotPose, update_flag, verbose, plan_sent_flag)
+                    writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time, currentRobotPose, update_flag, verbose, plan_sent_flag)
                     # printHelper(
                     #     verbose,
                     #     update_flag,
