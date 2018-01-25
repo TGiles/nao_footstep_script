@@ -12,9 +12,6 @@ def main(filename):
     test_dir = ""
 
     num_steps_to_send = 4
-    num_steps_straight_plan = 10
-    time_between_step = 0.6
-    start_leg = 'LLeg'
 
     timeBetweenStep  = 0.6
     desiredStepIncrement = 0.06
@@ -22,13 +19,13 @@ def main(filename):
     wb = 0.0 # Straight line walking
     desired_distance = 10*0.06
     rho = None
-    #rho=-(4.0*12.0*0.0254) #radius of curvature (ft to meters)
+    rho= -(4.0*12.0*0.0254) #radius of curvature (ft to meters)
     if (rho is not None):
         wb = vb/rho # steer to
         desired_distance = (np.pi/2.0)*np.abs(rho)
 
     feet_separation = 0.10
-    startLeg = 'LLeg'
+    startLeg = 'RLeg'
     q0 = None
     globalLegName, globalFootSteps, globalTimeList = \
         createGlobalPlan(desired_distance, timeBetweenStep,
