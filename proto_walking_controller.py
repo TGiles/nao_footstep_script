@@ -247,8 +247,10 @@ def main(robotIP, PORT=9559):
     # legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
 
     num_steps_in_plan = len(footSteps)
-    print '   # Steps in Global Plan:', num_steps_in_plan
+    print '   # Steps in Local Plan:', num_steps_in_plan
+    print '   # Steps in Global Plan', len(globalFootSteps)
     clearExisting = True
+    return
     motionProxy.setFootSteps(
         legName,
         footSteps,
