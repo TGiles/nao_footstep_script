@@ -96,19 +96,32 @@ def  next_step(xb,yb,theta,feet_separation,LegFlag):
 #     vb = forward body velocity = step_length/step time
 #     wb = body rotation rate ( vb/ radius of curvature)
 #     feet_separation distance
-#     starting leg
-#     initial configuration
-def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, feet_separation, startLeg='RLeg',q0=None):
+#     startLeg = initial stance leg (move other leg first)
+#     q0 = initial configuration of body
+#     qStance = stance foot pose in same frame as q0
+
+def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
+                     feet_separation, startLeg='RLeg',q0=None, qStance = None):
     LegFlag = None
+    LegName = None
+
+    # This is the initial stance foot (start moving the other one)
     if startLeg == 'RLeg':
         LegFlag = 0
+        LegName = 'RLeg'
+        dist    = -0.5*feet_separation
     else:
         LegFlag = 1
+        LegName = 'LLeg'
+        dist    = 0.5*feet_separation
 
-    # Define the starting point
+    # Define the starting point of the body position
     xb,yb,theta = (0.0,0.0,0.0)
     if (q0 is not None):
         xb,yb,theta = q0
+    else:
+        print "Set initial stance foot pose relative to origin ..."
+        qStance =(0.0, dist, 0.0)
 
     timeList = []
     legList = []
@@ -116,17 +129,11 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, feet_separation,
     distance_traveled = 0.0
     startTime = 0.0
 
-    if (False):
-        # Assume we take a half step to start
-        xb,yb,theta,increment = next_point(xb,yb,theta,vb,wb,0.5*timeBetweenStep)
-        distance_traveled += increment
-
-        # returns next leg flag, current leg, and current step
-        LegFlag,leg,step = next_step(xb,yb,theta,feet_separation,LegFlag)
-        startTime += timeBetweenStep # calcuate postion on 1/2 step, but assume slow start
-        timeList.append(startTime)
-        legList.append(leg)
-        footstepList.append(step)
+    # Assume we list the initial stance foot as the first point
+    LegFlag = (LegFlag+1)%2 # increment from stance foot
+    timeList.append(startTime)
+    legList.append(LegName)
+    footstepList.append(qStance)
 
 
     limit_distance =  desired_distance - 0.5*timeBetweenStep*vb
@@ -164,6 +171,71 @@ def writeGlobalPlan(leg_array, footstep_array, time_array, experiment_dir, test_
         length = len(leg_array)
         for x in range(0, length):
             writer.writerow([ leg_array[x], time_array[x], footstep_array[x][0], footstep_array[x][1], footstep_array[x][2] ])
+
+def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
+                         iStance, qStance,startIndex, endIndex):
+
+    # Stance foot in internal world frame
+    Tstance =transform2D(qStance[0],qStance[1],qStance[2])
+
+    # Corresponding stance foot in plan
+    Tplan   = transform2D(globalFootSteps[iStance][0],
+                          globalFootSteps[iStance][1],
+                          globalFootSteps[iStance][2])
+
+
+    Ti = np.linalg.inv(Tplan)
+
+    # Put actual stance in the plan stance frame (this is accumulated error)
+    Terror = np.dot(Ti,Tstance)
+
+    qError = (Terror[0][2],Terror[1][2],np.arctan2(Terror[1][0],Terror[0][0]))
+    print " Step Error = ",qError
+
+    # Should sanity check this error
+    err = np.sqrt(qError[0]*qError[0] + qError[1]*qError[1])
+    if (err > 0.06 or np.abs(qError[2]) > 0.2):
+        print "     error is large - err=",err," -- ignore correction!"
+        qError = (0., 0., 0.)
+
+    # Get pose of the last unchangeable (startIndex > 0 assumed)
+    Tprior   = transform2D(globalFootSteps[startIndex-1][0],
+                           globalFootSteps[startIndex-1][1],
+                           globalFootSteps[startIndex-1][2])
+    Ti = np.linalg.inv(Tprior)
+
+    localLegName=[]
+    localFootSteps=[]
+    localTimeList = []
+
+    fraction = 0.0
+    if (endIndex > startIndex):
+        fraction = 1.0/(endIndex-startIndex)
+
+    for ndx in range(startIndex,endIndex):
+        Tnext = transform2D(globalFootSteps[ndx][0],
+                            globalFootSteps[ndx][1],
+                            globalFootSteps[ndx][2])
+
+        Trelative = np.dot(Ti,Tnext)
+        Ti = np.linalg.inv(Tnext) # update for the next calc
+
+        # Extract the relevant data
+        qRelative = [Trelative[0][2],Trelative[1][2],np.arctan2(Trelative[1][0],Trelative[0][0])]
+
+        # Apply a portion of correction to each step
+        qRelative[0] += fraction*qError[0]
+        qRelative[1] += fraction*qError[1]
+        qRelative[2] += fraction*qError[2]
+
+        localLegName.append(globalLegName[ndx])
+        localTimeList.append(globalTimeList[ndx])
+        localFootSteps.append(qRelative)
+
+        dist = np.sqrt(qRelative[0]*qRelative[0] + qRelative[1]*qRelative[1])
+        print "  relative step = ",qRelative, " dist=",dist
+
+    return (localLegName, localFootSteps, localTimeList)
 
 
 def createLocalPlanFromGlobal(legList, footstepList, timeList):
