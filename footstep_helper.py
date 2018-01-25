@@ -172,8 +172,9 @@ def writeGlobalPlan(leg_array, footstep_array, time_array, experiment_dir, test_
         for x in range(0, length):
             writer.writerow([ leg_array[x], time_array[x], footstep_array[x][0], footstep_array[x][1], footstep_array[x][2] ])
 
+
 def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
-                         iStance, qStance,startIndex, endIndex):
+                         iStance, qStance, startIndex, endIndex):
 
     # Stance foot in internal world frame
     Tstance =transform2D(qStance[0],qStance[1],qStance[2])

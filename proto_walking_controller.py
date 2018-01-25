@@ -165,6 +165,7 @@ def main(robotIP, PORT=9559):
     '''
     file_writer.writerow([
         'Iteration',
+        'Elapsed Time',
         'World x',
         'World y',
         'World theta',
@@ -201,29 +202,59 @@ def main(robotIP, PORT=9559):
     postureProxy.goToPosture("StandInit", 0.5)
     useSensorValues = True
     # initRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
-    initRobotPosition = motionProxy.getRobotPosition(useSensorValues)
-    initRobotPose = almath.Pose2D(initRobotPosition)
-    print "Robot Position", initRobotPosition
+    init_robot_position = motionProxy.getRobotPosition(useSensorValues)
+    initRobotPose = almath.Pose2D(init_robot_position)
+    print "Robot Position", init_robot_position
 
     num_steps_to_send = 4
     num_steps_straight_plan = 10
-    time_between_step = 0.6
+    time_between_step = 0.6 # s
+    x_step_length = 0.06 # m
     start_leg = 'LLeg'
+    desired_distance = 1.2191 # m, currently 4ft
+    vb = x_step_length / time_between_step # m/s
+    wb = 0 # rad/s, straight line test
+    y_dist_separation = 0.1 # m, default gait value for maxStepY
+    # NOTE FootSeparation 0.1 m, MinFootSeparation 0.088 m according to NAO locomotion API
+
 
     # legName, footSteps, timeList = createStraightFootStepPlan(10, 0.6, "LLeg")
-    #NOTE using local plan as global to test CSV writer
-    globalLegName, globalFootSteps, globalTimeList = createStraightGlobalPlan(
-        num_steps_straight_plan,
-        time_between_step,
-        start_leg)
+    #NOTE createStraightGlobalPlan is an old function, i.e. not conner
+    # globalLegName, globalFootSteps, globalTimeList = createStraightGlobalPlan(
+    #     num_steps_straight_plan,
+    #     time_between_step,
+    #     start_leg)
 
+    # Since it's a do while type of loop, need initial steps to kick off planning
+    init_footstep_vector = motionProxy.getFootSteps()
+    # init_robot_pose = motionProxy.getRobotPosition(useSensorValues)
+    q_stance = None
+    i_stance = 0 # since first footsteps, index of the stance foot should be zero
+    footstep_count = 0
+    start_index = 1 # Should be one
+    end_index = start_index + num_steps_to_send
+    if start_leg == 'LLeg':
+        q_stance = init_footstep_vector[0][0]
+    else:
+        q_stance = init_footstep_vector[0][1]
 
+    globalLegName, globalFootSteps, globalTimeList = createGlobalPlan(desired_distance, time_between_step, vb, wb, 
+        y_dist_separation, start_leg, init_robot_position, q_stance)
 
-    writeGlobalPlan(globalLegName, globalFootSteps, globalTimeList, experiment_dir, test_dir)
-    legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
+    writeGlobalPlan(globalLegName, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
+
+    legName, footSteps, timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
+    # legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
+
     num_steps_in_plan = len(footSteps)
+    print '   # Steps in Global Plan:', num_steps_in_plan
     clearExisting = True
-    motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
+    motionProxy.setFootSteps(
+        legName,
+        footSteps,
+        timeList,
+        clearExisting)
+    #motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
     time.sleep(1.0)
     cnt = 0
     footstep_count = -1
@@ -276,10 +307,17 @@ def main(robotIP, PORT=9559):
                         endIndex = num_steps_in_plan
 
                     if startIndex < endIndex:
+                        #legName, footSteps, timeList = getLocalPlan(globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
+                        i_stance = footstep_count
+                        if currentUnchangeable[0][0] == 'LLeg':
+                            q_stance = debug[0][0]
+                        else:
+                            q_stance = debug[0][1]
+                        local_legName, local_footSteps, local_timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, startIndex, endIndex)
                         motionProxy.setFootSteps(
-                            legName[  startIndex: endIndex],
-                            footSteps[startIndex: endIndex],
-                            timeList[ startIndex: endIndex],
+                            local_legName,
+                            local_footSteps,
+                            local_timeList,
                             True
                         )
                         print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', footSteps[startIndex]
@@ -327,14 +365,14 @@ def main(robotIP, PORT=9559):
         writer.writerow(['Initial x', 'Initial y', 'Initial theta',
                          'Final x'  , 'Final y'  , 'Final theta',
                          'Delta x'  , 'Delta y'  , 'Delta theta'])
-        writer.writerow([initRobotPosition[0], initRobotPosition[1],
-        initRobotPosition[2], endRobotPosition[0], endRobotPosition[1],
+        writer.writerow([init_robot_position[0], init_robot_position[1],
+        init_robot_position[2], endRobotPosition[0], endRobotPosition[1],
         endRobotPosition[2], robotMove.x, robotMove.y, robotMove.theta])
     writeSummaryCSV([
         len(footSteps),
         timeList[0],
         cnt,
-        initRobotPosition,
+        init_robot_position,
         endRobotPosition,
         robotMove
     ], experiment_dir, test_dir)

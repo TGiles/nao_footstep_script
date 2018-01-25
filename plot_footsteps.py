@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from  footstep_helper import *
 
 
-global_steps_file = "experiment_data/global-plan-test.csv"
+global_steps_file = "experiment_data/global-plan.csv"
 
 steps={}
 steps["LLeg"]=[]
