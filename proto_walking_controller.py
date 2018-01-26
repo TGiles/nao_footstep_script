@@ -7,6 +7,7 @@ import argparse
 import almath
 import csv
 from footstep_helper import *
+from plot_footsteps import *
 
 from naoqi import ALProxy
 robotIP = '192.168.10.110'
@@ -28,7 +29,8 @@ def printHelper(verbose, update_flag, currentUnchangeable, currentChangeable,foo
 
 
 def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
-                              currentRobotPose, update_flag, verbose, plan_sent_flag):
+                              currentRobotPose, update_flag, verbose, plan_sent_flag,
+                              start_index, end_index, footstep_count):
     ''' Should write:
     iteration num
     elapsed time
@@ -91,7 +93,10 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
         footstep[2][0][2][2],
         update_flag,
         verbose,
-        plan_sent_flag
+        plan_sent_flag,
+        start_index,
+        end_index,
+        footstep_count
         ])
     else:
         writerObj.writerow([
@@ -117,7 +122,10 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
         'No changeable theta',
         update_flag,
         verbose,
-        plan_sent_flag
+        plan_sent_flag,
+        start_index,
+        end_index,
+        footstep_count
         ])
 
 
@@ -187,7 +195,10 @@ def main(robotIP, PORT=9559):
         'First changeable theta',
         'Update flag',
         'Verbose',
-        'New plan sent?'
+        'New plan sent?',
+        'Start index',
+        'End index',
+        'Footstep count'
     ])
     # file_writer.writerow(['Leg Name', 'Relative x', 'Relative y', 'Relative theta',
     #                                 'World x', 'World y', 'World theta'])
@@ -350,7 +361,8 @@ def main(robotIP, PORT=9559):
                     print 'Current velocity:', motionProxy.getRobotVelocity()
                     writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time,
                                               currentRobotPose, update_flag,
-                                              verbose, plan_sent_flag)
+                                              verbose, plan_sent_flag, start_index,
+                                              end_index, footstep_count)
 
 
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
@@ -395,6 +407,7 @@ def main(robotIP, PORT=9559):
     # Robot to crouch position
     print '  Move robot to rest position ... '
     motionProxy.rest()
+    plotter(experiment_dir, test_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
