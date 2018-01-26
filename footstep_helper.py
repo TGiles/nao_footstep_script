@@ -223,6 +223,8 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
     if (endIndex > startIndex):
         fraction = 1.0/(endIndex-startIndex)
 
+    print "  iStance=",iStance
+    
     for ndx in range(startIndex,endIndex):
         Tnext = transform2D(globalFootSteps[ndx][0],
                             globalFootSteps[ndx][1],
@@ -235,16 +237,16 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
         qRelative = [Trelative[0][2],Trelative[1][2],np.arctan2(Trelative[1][0],Trelative[0][0])]
 
         # Apply a portion of correction to each step
-        qRelative[0] += fraction*qError[0]
-        qRelative[1] += fraction*qError[1]
-        qRelative[2] += fraction*qError[2]
+        #qRelative[0] += fraction*qError[0]
+        #qRelative[1] += fraction*qError[1]
+        #qRelative[2] += fraction*qError[2]
 
         localLegName.append(globalLegName[ndx])
         localTimeList.append(globalTimeList[ndx])
         localFootSteps.append(qRelative)
 
         dist = np.sqrt(qRelative[0]*qRelative[0] + qRelative[1]*qRelative[1])
-        print "  relative step = ",qRelative, " dist=",dist
+        print "  relative step = ",qRelative, " leg=",globalLegName[ndx], " ndx=",ndx," dist=",dist
 
     return (localLegName, localFootSteps, localTimeList)
 

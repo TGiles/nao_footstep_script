@@ -222,7 +222,7 @@ def main(robotIP, PORT=9559):
     time_between_step = 0.6 # s
     x_step_length = 0.06 # m
     start_leg = 'LLeg'
-    desired_distance = 1.2191 # m, currently 4ft
+    desired_distance = 0.5191 # m, currently 4ft
     vb = x_step_length / time_between_step # m/s
     wb = 0 # rad/s, straight line test
     y_dist_separation = 0.1 # m, default gait value for maxStepY
@@ -333,6 +333,10 @@ def main(robotIP, PORT=9559):
                     endIndex = startIndex + num_steps_to_send
                     if (endIndex > num_steps_in_global_plan):
                         endIndex = num_steps_in_global_plan
+                        print "  end of step array with ",startIndex,"  ",endIndex
+                        if ( (endIndex-startIndex) < 2):
+                            print "  terminate stepping with ",startIndex,"  ",endIndex
+                            flag = False 
 
                     if startIndex < endIndex:
                         i_stance = footstep_count
@@ -361,8 +365,8 @@ def main(robotIP, PORT=9559):
                     print 'Current velocity:', motionProxy.getRobotVelocity()
                     writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time,
                                               currentRobotPose, update_flag,
-                                              verbose, plan_sent_flag, start_index,
-                                              end_index, footstep_count)
+                                              verbose, plan_sent_flag, startIndex,
+                                              endIndex, footstep_count)
 
 
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
@@ -396,8 +400,8 @@ def main(robotIP, PORT=9559):
         init_robot_position[2], endRobotPosition[0], endRobotPosition[1],
         endRobotPosition[2], robotMove.x, robotMove.y, robotMove.theta])
     writeSummaryCSV([
-        len(footSteps),
-        timeList[0],
+        len(globalFootSteps),
+        globalTimeList[0],
         cnt,
         init_robot_position,
         endRobotPosition,
