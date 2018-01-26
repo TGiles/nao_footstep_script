@@ -238,17 +238,23 @@ def main(robotIP, PORT=9559):
     else:
         q_stance = init_footstep_vector[0][1]
 
-    globalLegName, globalFootSteps, globalTimeList = createGlobalPlan(desired_distance, time_between_step, vb, wb, 
-        y_dist_separation, start_leg, init_robot_position, q_stance)
+    print " Step generation : "
+    print "       desired dist=",desired_distance, " vb=",vb," wb=",wb
+    print "       separation = ",y_dist_separation, " stanceLeg=",start_leg
+    print "       init_position=",init_robot_position, "  q_stance=",q_stance
+    globalLegName, globalFootSteps, globalTimeList = \
+        createGlobalPlan(desired_distance, time_between_step, vb, wb,
+                         y_dist_separation, start_leg,
+                         init_robot_position, q_stance)
 
     writeGlobalPlan(globalLegName, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
 
     legName, footSteps, timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
     # legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
 
-    num_steps_in_plan = len(footSteps)
-    print '   # Steps in Local Plan:', num_steps_in_plan
-    print '   # Steps in Global Plan', len(globalFootSteps)
+    num_steps_in_plan = len(globalFootSteps) # This is limit of stepping loop
+    print '   # Steps in Local Plan:', len(footSteps)
+    print '   # Steps in Global Plan', num_steps_in_plan
     clearExisting = True
     return
     motionProxy.setFootSteps(
