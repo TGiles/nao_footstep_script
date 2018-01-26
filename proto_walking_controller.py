@@ -7,6 +7,7 @@ import argparse
 import almath
 import csv
 from footstep_helper import *
+from plot_footsteps import *
 
 from naoqi import ALProxy
 robotIP = '192.168.10.110'
@@ -247,10 +248,18 @@ def main(robotIP, PORT=9559):
     # legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
 
     num_steps_in_plan = len(footSteps)
-    print '   # Steps in Local Plan:', num_steps_in_plan
-    print '   # Steps in Global Plan', len(globalFootSteps)
+    # print '   # Steps in Local Plan:', num_steps_in_plan
+    # print '   # Steps in Global Plan', len(globalFootSteps)
+    # print ' legName vector', globalLegName
+    # print
+    # print ' footsteps vector', globalFootSteps
+    # print
+    # print ' footstep subvector', globalFootSteps[1]
+    # print
+    # print ' footstep subsubvector', globalFootSteps[1][0], globalFootSteps[1][1], globalFootSteps[1][2]
+    # print ' time list', globalTimeList
     clearExisting = True
-    return
+    # return
     motionProxy.setFootSteps(
         legName,
         footSteps,
@@ -303,7 +312,9 @@ def main(robotIP, PORT=9559):
                         verbose = True
 
                 if update_flag:
+                    #                    length of unchangeable vector
                     startIndex = footstep_count+len(debug[1])
+                    # NOTE, looks like endIndex is never increasing but startIndex increases.
                     endIndex = startIndex + num_steps_to_send
                     if (endIndex > num_steps_in_plan):
                         endIndex = num_steps_in_plan
@@ -312,17 +323,34 @@ def main(robotIP, PORT=9559):
                         #legName, footSteps, timeList = getLocalPlan(globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
                         i_stance = footstep_count
                         if currentUnchangeable[0][0] == 'LLeg':
+                            # Left foot in world frame, x, y, theta
                             q_stance = debug[0][0]
                         else:
+                            # Right foot in world frame, x, y, theta
                             q_stance = debug[0][1]
                         local_legName, local_footSteps, local_timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, startIndex, endIndex)
+                        print 'local_legname'
+                        for thing in local_legName:
+                            print '    ', thing
+                        print
+                        print 'local_footSteps'
+                        for thing in local_footSteps:
+                            print '    ', thing
+                        print
+                        print 'local_timeList'
+                        for thing in local_timeList:
+                            print '    ', thing
+                        print
+                        print 'footstep_count', footstep_count
+                        if footstep_count > 5:
+                            return
                         motionProxy.setFootSteps(
                             local_legName,
                             local_footSteps,
                             local_timeList,
                             True
                         )
-                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', footSteps[startIndex]
+                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', globalFootSteps[startIndex]
                         plan_sent_flag = True
 
                 if verbose or plan_sent_flag:
@@ -382,6 +410,7 @@ def main(robotIP, PORT=9559):
     # Robot to crouch position
     print '  Move robot to rest position ... '
     motionProxy.rest()
+    plotter(experiment_dir, test_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
