@@ -225,24 +225,25 @@ def main(robotIP, PORT=9559):
     end_index = start_index + num_steps_to_send
     dist = 10.0
     init_footstep_vector = None
-    while (dist > 0.6*feet_separation):
-        # Since it's a do while type of loop, need initial steps to kick off planning
-        init_footstep_vector = motionProxy.getFootSteps()
-        if start_leg == 'LLeg':
-            q_stance = init_footstep_vector[0][0]
-        else:
-            q_stance = init_footstep_vector[0][1]
+    # should feet_separation be y_dist_separation?
+    # while (dist > 0.6*y_dist_separation):
+    #     # Since it's a do while type of loop, need initial steps to kick off planning
+    #     init_footstep_vector = motionProxy.getFootSteps()
+    #     if start_leg == 'LLeg':
+    #         q_stance = init_footstep_vector[0][0]
+    #     else:
+    #         q_stance = init_footstep_vector[0][1]
 
-        print "  init robot position =",init_robot_position
-        print "    qStance=",q_stance
+    #     print "  init robot position =",init_robot_position
+    #     print "    qStance=",q_stance
 
-        dist = np.sqrt((q_stance[0]-init_robot_position[0])**2 + (q_stance[1]-init_robot_position[1)**2)
-        print "    dist = ", dist
+    #     dist = np.sqrt((q_stance[0]-init_robot_position[0])**2 + (q_stance[1]-init_robot_position[1])**2)
+    #     print "    dist = ", dist
 
-        if (dist > 0.6*y_dist_separation):
-            print "Error: Invalid starting pose data:"
-            time.sleep(1.0)
-
+    #     if (dist > 0.6*y_dist_separation):
+    #         print "Error: Invalid starting pose data:"
+    #         time.sleep(1.0)
+    q_stance = None
 
     print " Step generation : "
     print "       desired dist=",desired_distance, " vb=",vb," wb=",wb
@@ -254,7 +255,7 @@ def main(robotIP, PORT=9559):
                          init_robot_position, q_stance)
 
     writeGlobalPlan(globalLegNames, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
-
+    q_stance = globalFootSteps[0] # first global footstep
     localLegNames, localFootSteps, localTimeList = \
             getLocalPlan(globalLegNames, globalFootSteps, globalTimeList,
                          i_stance, q_stance, start_index, end_index)
@@ -263,7 +264,7 @@ def main(robotIP, PORT=9559):
     print '   # Steps in Local Plan:', len(localFootSteps)
     print '   # Steps in Global Plan', num_steps_in_global_plan
     clearExisting = True
-    return
+    # return
     motionProxy.setFootSteps(
         localLegNames,
         localFootSteps,
@@ -329,7 +330,7 @@ def main(robotIP, PORT=9559):
                         else:
                             q_stance = debug[0][1]
                         localLegNames, localFootSteps, localTimeList = \
-                                getLocalPlan(globalLegName, globalFootSteps, globalTimeList,
+                                getLocalPlan(globalLegNames, globalFootSteps, globalTimeList,
                                              i_stance, q_stance, startIndex, endIndex)
                         motionProxy.setFootSteps(
                             localLegNames,
