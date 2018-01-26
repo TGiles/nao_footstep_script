@@ -16,7 +16,7 @@ steps["RLeg"]=[]
 
 print "Load the global footstep plan ... "
 hdr = 0
-Tinit = None # versus transform2D(0,0,0) for identity
+Tinit = transform2D(0,0,0) #None # versus None for first pose
 with open(global_steps_file,'rt') as csvfile:
     print "opened"
     global_steps_reader = csv.reader(csvfile,delimiter=',')
@@ -58,7 +58,7 @@ print "Read in the run data ... "
 footstep_execution_file = "experiment_data/footstep-execution.csv"
 hdr = 0
 itr = -1
-Tinit = None
+Tinit = transform2D(0,0,0)#None
 steps={}
 steps["LLeg"]=[]
 steps["RLeg"]=[]
@@ -66,9 +66,9 @@ body = []
 
 itr_ndx = 0
 time_ndx = 1
-body_ndx = 1
-lleg_ndx = 4
-rleg_ndx = 7
+body_ndx = 2
+lleg_ndx = 5
+rleg_ndx = 8
 
 with open(footstep_execution_file,'rt') as csvfile:
     print "opened"
