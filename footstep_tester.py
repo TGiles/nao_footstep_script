@@ -17,19 +17,20 @@ def main(filename):
     desiredStepIncrement = 0.06
     vb = desiredStepIncrement/timeBetweenStep
     wb = 0.0 # Straight line walking
-    desired_distance = 10*0.06
+    desired_distance = 1.42#0*0.06
     rho = None
-    rho= -(4.0*12.0*0.0254) #radius of curvature (ft to meters)
+    #rho= -(4.0*12.0*0.0254) #radius of curvature (ft to meters)
     if (rho is not None):
         wb = vb/rho # steer to
         desired_distance = (np.pi/2.0)*np.abs(rho)
 
     feet_separation = 0.10
     startLeg = 'RLeg'
-    q0 = None
+    q0 = (0.856136322, 0.183231458,0.041973714)
+    qS = (0.858225226, 0.13352643, 0.041824102)
     globalLegName, globalFootSteps, globalTimeList = \
         createGlobalPlan(desired_distance, timeBetweenStep,
-                         vb, wb, feet_separation,startLeg,q0)
+                         vb, wb, feet_separation,startLeg,q0,qS)
 
 
 

@@ -16,6 +16,7 @@ steps["RLeg"]=[]
 
 print "Load the global footstep plan ... "
 hdr = 0
+Tinit = None # versus transform2D(0,0,0) for identity
 with open(global_steps_file,'rt') as csvfile:
     print "opened"
     global_steps_reader = csv.reader(csvfile,delimiter=',')
@@ -26,9 +27,21 @@ with open(global_steps_file,'rt') as csvfile:
             print "hdr",hdr," >",row
             continue
 
+        if (Tinit is None):
+            print "Initializing the global transform ..."
+            T = transform2D(float(row[2]),float(row[3]),float(row[4]))
+            print "  T=",T
+            Tinit = np.linalg.inv(T)
+            print "  Ti=",Tinit
+
         print ">",row
-        #      leg                  time           x              y           theta
-        steps[row[0]].append([float(row[1]),float(row[2]),float(row[3]),float(row[4])])
+        time= float(row[1])
+        xb  = float(row[2])
+        yb  = float(row[3])
+        Zb  = float(row[4])
+        T = np.dot(Tinit, transform2D(xb,yb,Zb))
+        steps[row[0]].append([time, T[0][2], T[1][2],np.arctan2(T[1][0],T[0][0])])
+        #      leg            time     x        y           theta
 
 
 print "drawing the global footstep plan ..."

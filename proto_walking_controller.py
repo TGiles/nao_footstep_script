@@ -27,7 +27,8 @@ def printHelper(verbose, update_flag, currentUnchangeable, currentChangeable,foo
     print '\n'
 
 
-def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time, currentRobotPose, update_flag, verbose, plan_sent_flag):
+def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
+                              currentRobotPose, update_flag, verbose, plan_sent_flag):
     ''' Should write:
     iteration num
     elapsed time
@@ -207,7 +208,6 @@ def main(robotIP, PORT=9559):
     print "Robot Position", init_robot_position
 
     num_steps_to_send = 4
-    num_steps_straight_plan = 10
     time_between_step = 0.6 # s
     x_step_length = 0.06 # m
     start_leg = 'LLeg'
@@ -217,53 +217,61 @@ def main(robotIP, PORT=9559):
     y_dist_separation = 0.1 # m, default gait value for maxStepY
     # NOTE FootSeparation 0.1 m, MinFootSeparation 0.088 m according to NAO locomotion API
 
-
-    # legName, footSteps, timeList = createStraightFootStepPlan(10, 0.6, "LLeg")
-    #NOTE createStraightGlobalPlan is an old function, i.e. not conner
-    # globalLegName, globalFootSteps, globalTimeList = createStraightGlobalPlan(
-    #     num_steps_straight_plan,
-    #     time_between_step,
-    #     start_leg)
-
-    # Since it's a do while type of loop, need initial steps to kick off planning
-    init_footstep_vector = motionProxy.getFootSteps()
     # init_robot_pose = motionProxy.getRobotPosition(useSensorValues)
     q_stance = None
     i_stance = 0 # since first footsteps, index of the stance foot should be zero
     footstep_count = 0
     start_index = 1 # Should be one
     end_index = start_index + num_steps_to_send
-    if start_leg == 'LLeg':
-        q_stance = init_footstep_vector[0][0]
-    else:
-        q_stance = init_footstep_vector[0][1]
+    dist = 10.0
+    init_footstep_vector = None
+    while (dist > 0.6*feet_separation):
+        # Since it's a do while type of loop, need initial steps to kick off planning
+        init_footstep_vector = motionProxy.getFootSteps()
+        if start_leg == 'LLeg':
+            q_stance = init_footstep_vector[0][0]
+        else:
+            q_stance = init_footstep_vector[0][1]
+
+        print "  init robot position =",init_robot_position
+        print "    qStance=",q_stance
+
+        dist = np.sqrt((q_stance[0]-init_robot_position[0])**2 + (q_stance[1]-init_robot_position[1)**2)
+        print "    dist = ", dist
+
+        if (dist > 0.6*y_dist_separation):
+            print "Error: Invalid starting pose data:"
+            time.sleep(1.0)
+
 
     print " Step generation : "
     print "       desired dist=",desired_distance, " vb=",vb," wb=",wb
     print "       separation = ",y_dist_separation, " stanceLeg=",start_leg
     print "       init_position=",init_robot_position, "  q_stance=",q_stance
-    globalLegName, globalFootSteps, globalTimeList = \
+    globalLegNames, globalFootSteps, globalTimeList = \
         createGlobalPlan(desired_distance, time_between_step, vb, wb,
                          y_dist_separation, start_leg,
                          init_robot_position, q_stance)
 
-    writeGlobalPlan(globalLegName, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
+    writeGlobalPlan(globalLegNames, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
 
-    legName, footSteps, timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
-    # legName, footSteps, timeList = createLocalPlanFromGlobal(globalLegName, globalFootSteps, globalTimeList)
+    localLegNames, localFootSteps, localTimeList = \
+            getLocalPlan(globalLegNames, globalFootSteps, globalTimeList,
+                         i_stance, q_stance, start_index, end_index)
 
-    num_steps_in_plan = len(globalFootSteps) # This is limit of stepping loop
-    print '   # Steps in Local Plan:', len(footSteps)
-    print '   # Steps in Global Plan', num_steps_in_plan
+    num_steps_in_global_plan = len(globalFootSteps) # This is limit of stepping loop
+    print '   # Steps in Local Plan:', len(localFootSteps)
+    print '   # Steps in Global Plan', num_steps_in_global_plan
     clearExisting = True
     return
     motionProxy.setFootSteps(
-        legName,
-        footSteps,
-        timeList,
+        localLegNames,
+        localFootSteps,
+        localTimeList,
         clearExisting)
-    #motionProxy.setFootSteps(legName[0:num_steps_to_send], footSteps[0:num_steps_to_send], timeList[0:num_steps_to_send], clearExisting)
     time.sleep(1.0)
+
+    # Set up processing loop variables
     cnt = 0
     footstep_count = -1
     currentUnchangeable = ['none']
@@ -311,40 +319,38 @@ def main(robotIP, PORT=9559):
                 if update_flag:
                     startIndex = footstep_count+len(debug[1])
                     endIndex = startIndex + num_steps_to_send
-                    if (endIndex > num_steps_in_plan):
-                        endIndex = num_steps_in_plan
+                    if (endIndex > num_steps_in_global_plan):
+                        endIndex = num_steps_in_global_plan
 
                     if startIndex < endIndex:
-                        #legName, footSteps, timeList = getLocalPlan(globalFootSteps, globalTimeList, i_stance, q_stance, start_index, end_index)
                         i_stance = footstep_count
                         if currentUnchangeable[0][0] == 'LLeg':
                             q_stance = debug[0][0]
                         else:
                             q_stance = debug[0][1]
-                        local_legName, local_footSteps, local_timeList = getLocalPlan(globalLegName, globalFootSteps, globalTimeList, i_stance, q_stance, startIndex, endIndex)
+                        localLegNames, localFootSteps, localTimeList = \
+                                getLocalPlan(globalLegName, globalFootSteps, globalTimeList,
+                                             i_stance, q_stance, startIndex, endIndex)
                         motionProxy.setFootSteps(
-                            local_legName,
-                            local_footSteps,
-                            local_timeList,
+                            localLegNames,
+                            localFootSteps,
+                            localTimeList,
                             True
                         )
-                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', footSteps[startIndex]
+                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ',
+                        print localLegNames
+                        print localFootSteps
+                        print localTimeList
                         plan_sent_flag = True
 
                 if verbose or plan_sent_flag:
                     elapsed_time = time.time() - time_start
 
                     print 'Current velocity:', motionProxy.getRobotVelocity()
-                    writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time, currentRobotPose, update_flag, verbose, plan_sent_flag)
-                    # printHelper(
-                    #     verbose,
-                    #     update_flag,
-                    #     currentUnchangeable,
-                    #     currentChangeable,
-                    #     debug,
-                    #     useSensorValues,
-                    #     footstep_count,
-                    #     motionProxy)
+                    writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time,
+                                              currentRobotPose, update_flag,
+                                              verbose, plan_sent_flag)
+
 
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
                 # Stop the loop, as there are no footsteps left

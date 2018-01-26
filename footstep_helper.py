@@ -118,10 +118,20 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
     # Define the starting point of the body position
     xb,yb,theta = (0.0,0.0,0.0)
     if (q0 is not None):
+        print "  plan from given start pose=",q0
         xb,yb,theta = q0
+        if (qStance is None):
+            dummy,leg, qStance = next_step(xb,yb,theta,feet_separation,LegFlag)
+            print "  set qStance if not given =",qStance
+        else:
+            print "  given qStance =",qStance, " with defined body pose"
     else:
         print "Set initial stance foot pose relative to origin ..."
-        qStance =(0.0, dist, 0.0)
+        if (qStance is None):
+            qStance =(0.0, dist, 0.0)
+            print "  set qStance if not given =",qStance
+        else:
+            print "  given qStance =",qStance, " with initial body at origin"
 
     timeList = []
     legList = []
