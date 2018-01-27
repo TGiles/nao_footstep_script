@@ -166,7 +166,7 @@ def writeSummaryCSV(parameter_list, experiment_dir, test_dir):
         parameter_list[5].x, parameter_list[5].y, parameter_list[5].theta ])
 
 
-def main(robotIP, PORT=9559):
+def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
     experiment_dir = 'experiment_data'
     test_dir = str(datetime.datetime.now())
     try:
@@ -238,15 +238,24 @@ def main(robotIP, PORT=9559):
     initRobotPose = almath.Pose2D(init_robot_position)
     print "Robot Position", init_robot_position
 
+    print "Desired distance=",desired_distance
+    print "Desired radius of curvature =",rho
+
     num_steps_to_send = 4
     time_between_step = 0.6 # s
     x_step_length = 0.06 # m
     start_leg = 'LLeg'
-    desired_distance = 0.5191 # m, currently 4ft
     vb = x_step_length / time_between_step # m/s
     wb = 0 # rad/s, straight line test
     y_dist_separation = 0.1 # m, default gait value for maxStepY
     # NOTE FootSeparation 0.1 m, MinFootSeparation 0.088 m according to NAO locomotion API
+    if (rho is not None):
+        wb = vb/rho # steer to
+        desired_distance = (np.pi/2.0)*np.abs(rho)
+        print "Recalculate turning rate and distance if given radius of curvature!"
+        print "Desired distance=",desired_distance
+    print " vb=",vb,"  wb=",wb
+
 
     # init_robot_pose = motionProxy.getRobotPosition(useSensorValues)
     q_stance = None
@@ -298,6 +307,7 @@ def main(robotIP, PORT=9559):
     # Loop assumes a valid plan was given before starting
     # NOTE Fix this later (1/16)
     run_flag = True
+    continue_updating_steps_flag = True # set false when we get to final 2 steps
     time_start = time.time()
 
     while (run_flag):
@@ -343,7 +353,7 @@ def main(robotIP, PORT=9559):
                 #   send plan updates when not in this update zone
                 update_flag = False
                 step_time_remaining = debug[1][0][1]
-                if ( (step_time_remaining> 0.18) or ((step_time_remaining < 0.15 and step_time_remaining > 0.08) ):
+                if ( (step_time_remaining> 0.18) or (step_time_remaining < 0.15 and step_time_remaining > 0.08) ):
                     #print 'Update flag set'
                     update_flag = True
 
@@ -354,10 +364,10 @@ def main(robotIP, PORT=9559):
                     if (endIndex > num_steps_in_global_plan):
                         endIndex = num_steps_in_global_plan
                         print "  end of step array with ",startIndex,"  ",endIndex
-                        if ( (endIndex-startIndex) < 2):
-                            print "  this is the last step plan update ",startIndex,"  ",endIndex
-                            run_flag = False
-
+                if update_flag and continue_updating_steps_flag:
+                    if ( (endIndex-startIndex) < 2):
+                        print "  this is the last step plan update ",startIndex,"  ",endIndex
+                        continue_updating_steps_flag = False
                     # There is data in the queue to send
                     if startIndex < endIndex:
                         q_stance = None
@@ -406,7 +416,7 @@ def main(robotIP, PORT=9559):
 
             if (len(debug[1]) == 0 and len(debug[2]) == 0):
                 # Stop the loop, as there are no footsteps left
-                flag = False
+                run_flag = False
 
         cnt = cnt + 1
     # Go to rest position
@@ -455,5 +465,9 @@ if __name__ == "__main__":
                         help="Robot ip address")
     parser.add_argument("--port", type=int, default=9559,
                         help="Robot port number")
+    parser.add_argument("--desired_distance", type=float, default=0.5,
+                        help="Desired walking distance (meters)")
+    parser.add_argument("--desired_radius", type=float, default=None,
+                        help="Desired radius of curvature (meters) (default =None)")
     args = parser.parse_args()
-    main(args.ip, args.port)
+    main(args.ip, args.port, args.desired_distance, args.desired_radius)
