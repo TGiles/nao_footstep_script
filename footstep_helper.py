@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+#TODO Refactor variable names to underscore convention
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
