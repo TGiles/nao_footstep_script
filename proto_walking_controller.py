@@ -12,24 +12,24 @@ from plot_footsteps import *
 from naoqi import ALProxy
 robotIP = '192.168.10.110'
 
-def printHelper(verbose, update_flag, currentUnchangeable, currentChangeable,footstepArray, useSensorValues, footstep_count, motionProxy):
+def print_helper(verbose, update_flag, current_unchangeable, current_changeable, footstep_array, use_sensor_values, footstep_count, motion_proxy):
     print '  verbose=',verbose, '   update_flag=',update_flag
-    print '  Unchangable step ', currentUnchangeable, 'footstep_count', footstep_count
-    print '  Changeable step  ', currentChangeable
+    print '  Unchangable step ', current_unchangeable, 'footstep_count', footstep_count
+    print '  Changeable step  ', current_changeable
     print '  Current data:'
     print '     Unchangable:'
-    for step in footstepArray[1]:
+    for step in footstep_array[1]:
         print'         ', step
     print '     Changeable:'
-    for step in footstepArray[2]:
+    for step in footstep_array[2]:
         print'         ', step
-    print '    Vector length - change -> unchange', len(footstepArray[1]), len(footstepArray[2])
-    print '    Current world frame robot position:', almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
+    print '    Vector length - change -> unchange', len(footstep_array[1]), len(footstep_array[2])
+    print '    Current world frame robot position:', almath.Pose2D(motion_proxy.getRobotPosition(use_sensor_values))
     print '\n'
 
 
-def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
-                              currentRobotPose, update_flag, verbose, plan_sent_flag,
+def write_CSV_footsteps_executed(writer_obj, footstep, iteration_num, elapsed_time,
+                              current_robot_pose, update_flag, verbose, plan_sent_flag,
                               start_index, end_index, first_updated_leg,
                               footstep_count, i_stance, stance_leg, step_time_remaining):
     ''' Should write:
@@ -71,19 +71,19 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
     'stance_leg'
     'step_time_remaining'
     '''
-    # print 'writeCSVFootstepsExecuted'
+    # print 'write_CSV_footsteps_executed'
     # print
     # print footstep[2][0]
     # print
     # print footstep[2][0][2]
     # Need to check that changeable vector length is > 0, otherwise need to print N/A or something
     if len(footstep[2]) > 0:
-        writerObj.writerow([
+        writer_obj.writerow([
         iteration_num,
         elapsed_time,
-        currentRobotPose[0],
-        currentRobotPose[1],
-        currentRobotPose[2],
+        current_robot_pose[0],
+        current_robot_pose[1],
+        current_robot_pose[2],
         footstep[0][0][0],
         footstep[0][0][1],
         footstep[0][0][2],
@@ -111,12 +111,12 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
         step_time_remaining
         ])
     else:
-        writerObj.writerow([
+        writer_obj.writerow([
         iteration_num,
         elapsed_time,
-        currentRobotPose[0],
-        currentRobotPose[1],
-        currentRobotPose[2],
+        current_robot_pose[0],
+        current_robot_pose[1],
+        current_robot_pose[2],
         footstep[0][0][0],
         footstep[0][0][1],
         footstep[0][0][2],
@@ -146,14 +146,14 @@ def writeCSVFootstepsExecuted(writerObj, footstep, iteration_num, elapsed_time,
 
 
 
-def writeSummaryCSV(parameter_list, experiment_dir, test_dir):
+def write_summary_CSV(parameter_list, experiment_dir, test_dir):
     # parameter_list should be set up as
     #   len(footsteps)
     #   timeList[0]
     #   cnt
     #   robotInitialConfig
     #   robotEndConfig
-    #   robotMove
+    #   robot_move
     with open(experiment_dir+'/'+ test_dir +'/summary.csv', 'w+') as csvFile:
         writer = csv.writer(csvFile, delimiter=',')
         writer.writerow([test_dir])
@@ -222,20 +222,20 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
     ])
     # file_writer.writerow(['Leg Name', 'Relative x', 'Relative y', 'Relative theta',
     #                                 'World x', 'World y', 'World theta'])
-    motionProxy  = ALProxy("ALMotion", robotIP, PORT)
-    postureProxy = ALProxy("ALRobotPosture", robotIP, PORT)
-    # motionProxy.rest()
+    motion_proxy  = ALProxy("ALMotion", robotIP, PORT)
+    posture_proxy = ALProxy("ALRobotPosture", robotIP, PORT)
+    # motion_proxy.rest()
     # file_obj.close()
     # return
     # Wake up robot
-    motionProxy.wakeUp()
+    motion_proxy.wakeUp()
 
     # Send robot to Pose Init
-    postureProxy.goToPosture("StandInit", 0.5)
-    useSensorValues = True
-    # initRobotPosition = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
-    init_robot_position = motionProxy.getRobotPosition(useSensorValues)
-    initRobotPose = almath.Pose2D(init_robot_position)
+    posture_proxy.goToPosture("StandInit", 0.5)
+    use_sensor_values = True
+    # initRobotPosition = almath.Pose2D(motion_proxy.getRobotPosition(use_sensor_values))
+    init_robot_position = motion_proxy.getRobotPosition(use_sensor_values)
+    init_robot_pose = almath.Pose2D(init_robot_position)
     print "Robot Position", init_robot_position
 
     print "Desired distance=",desired_distance
@@ -257,7 +257,7 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
     print " vb=",vb,"  wb=",wb
 
 
-    # init_robot_pose = motionProxy.getRobotPosition(useSensorValues)
+    # init_robot_pose = motion_proxy.getRobotPosition(use_sensor_values)
     q_stance = None
     i_stance = 0 # since first footsteps, index of the stance foot should be zero
     footstep_count = 0
@@ -271,29 +271,29 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
     print "       desired dist=",desired_distance, " vb=",vb," wb=",wb
     print "       separation = ",y_dist_separation, " stanceLeg=",start_leg
     print "       init_position=",init_robot_position, "  q_stance=",q_stance
-    globalLegNames, globalFootSteps, globalTimeList = \
-        createGlobalPlan(desired_distance, time_between_step, vb, wb,
+    global_leg_names, global_footsteps, global_time_list = \
+        create_global_plan(desired_distance, time_between_step, vb, wb,
                          y_dist_separation, start_leg,
                          init_robot_position, q_stance)
 
-    writeGlobalPlan(globalLegNames, globalFootSteps, globalTimeList, experiment_dir, test_dir, 'global-plan.csv')
-    q_stance = globalFootSteps[0] # first global footstep based on body pose
-    localLegNames, localFootSteps, localTimeList = \
-            getLocalPlan(globalLegNames, globalFootSteps, globalTimeList,
+    write_global_plan(global_leg_names, global_footsteps, global_time_list, experiment_dir, test_dir, 'global-plan.csv')
+    q_stance = global_footsteps[0] # first global footstep based on body pose
+    local_leg_names, local_footsteps, local_time_list = \
+            get_local_plan(global_leg_names, global_footsteps, global_time_list,
                          i_stance, q_stance, start_index, end_index)
 
-    num_steps_in_global_plan = len(globalFootSteps) # This is limit of stepping loop
-    print '   # Steps in Local Plan:', len(localFootSteps)
+    num_steps_in_global_plan = len(global_footsteps) # This is limit of stepping loop
+    print '   # Steps in Local Plan:', len(local_footsteps)
     print '   # Steps in Global Plan', num_steps_in_global_plan
-    clearExisting = True
+    clear_existing = True
     # return
 
     # Send the initial plan to robot starting with the first foot in motion
-    motionProxy.setFootSteps(
-        localLegNames,
-        localFootSteps,
-        localTimeList,
-        clearExisting)
+    motion_proxy.setFootSteps(
+        local_leg_names,
+        local_footsteps,
+        local_time_list,
+        clear_existing)
     time.sleep(1.0)
 
     # Set up processing loop variables
@@ -301,8 +301,8 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
     i_stance       = -1 # Increment on first feedback to 0
     footstep_count =  0 # Increment on first change to 1 index of first step sent
 
-    currentUnchangeable = ['none']
-    currentChangeable = ['none']
+    current_unchangeable = ['none']
+    current_changeable = ['none']
 
     # Loop assumes a valid plan was given before starting
     # NOTE Fix this later (1/16)
@@ -314,37 +314,37 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
         # time.sleep(0.1)
         plan_sent_flag = False
         print 'Iteration', cnt,
-        debug = motionProxy.getFootSteps()
-        if (debug is not None):
-          # print '  len(debug)=',len(debug)
-          if(len(debug) > 1):
-            # @TODO - change debug to foostep_feedback (or other relevant name)
+        footstep_vectors = motion_proxy.getFootSteps()
+        if (footstep_vectors is not None):
+          # print '  len(footstep_vectors)=',len(footstep_vectors)
+          if(len(footstep_vectors) > 1):
+            # @TODO - change footstep_vectors to foostep_feedback (or other relevant name)
             # @TODO - add comments here that show the structure of the data
             #           e.g. just copy a print of the data structure
 
-            # print '  len(debug[1])=',len(debug[1])
+            # print '  len(footstep_vectors[1])=',len(footstep_vectors[1])
 
-            if (len(debug[1]) > 0):
+            if (len(footstep_vectors[1]) > 0):
 
                 # Grab the latest robot body pose
-                currentRobotPose = motionProxy.getRobotPosition(useSensorValues)
+                current_robot_pose = motion_proxy.getRobotPosition(use_sensor_values)
 
                 verbose = False # Flag to log any significant change
-                if currentUnchangeable[0] != debug[1][0][0]:
+                if current_unchangeable[0] != footstep_vectors[1][0][0]:
                     # Leg transition has occurred
                     # Update footstep_count for indexing the
                     # global footstep plan
-                    currentUnchangeable = debug[1][0]
-                    print '   currentUnchangeable', currentUnchangeable
+                    current_unchangeable = footstep_vectors[1][0]
+                    print '   current_unchangeable', current_unchangeable
                     footstep_count = footstep_count + 1
                     i_stance = i_stance + 1
                     verbose = True
 
-                if (len(debug[2]) > 0):
-                    if currentChangeable[0] != debug[2][0][0]:
+                if (len(footstep_vectors[2]) > 0):
+                    if current_changeable[0] != footstep_vectors[2][0][0]:
                         # First changeable step in queue has changed
                         # Figure out what the new step is and move the pointer
-                        currentChangeable = debug[2][0]
+                        current_changeable = footstep_vectors[2][0]
                         verbose = True
 
                 # See if it is safe to update the step plan
@@ -352,73 +352,69 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
                 #   0.15 < time remaining < 0.18 interval, so we will only
                 #   send plan updates when not in this update zone
                 update_flag = False
-                step_time_remaining = debug[1][0][1]
+                step_time_remaining = footstep_vectors[1][0][1]
                 if ( (step_time_remaining> 0.18) or (step_time_remaining < 0.15 and step_time_remaining > 0.08) ):
                     #print 'Update flag set'
                     update_flag = True
 
                 if update_flag:
                     # Safe to update the step plan
-                    startIndex = footstep_count+len(debug[1])
-                    endIndex   = startIndex + num_steps_to_send
-                    if (endIndex > num_steps_in_global_plan):
-                        endIndex = num_steps_in_global_plan
-                        print "  end of step array with ",startIndex,"  ",endIndex
+                    start_index = footstep_count+len(footstep_vectors[1])
+                    end_index   = start_index + num_steps_to_send
+                    if (end_index > num_steps_in_global_plan):
+                        end_index = num_steps_in_global_plan
+                        print "  end of step array with ",start_index,"  ",end_index
                 if update_flag and continue_updating_steps_flag:
-                    if ( (endIndex-startIndex) < 2):
-                        print "  this is the last step plan update ",startIndex,"  ",endIndex
+                    if ( (end_index-start_index) < 2):
+                        print "  this is the last step plan update ",start_index,"  ",end_index
                         continue_updating_steps_flag = False
                     # There is data in the queue to send
-                    if startIndex < endIndex:
+                    if start_index < end_index:
                         q_stance = None
-                        if (currentUnchangeable[0][0] == globalLegNames[i_stance+1]):
-                            if globalLegNames[i_stance] == 'LLeg':
-                                q_stance = debug[0][0]
+                        if (current_unchangeable[0][0] == global_leg_names[i_stance+1]):
+                            if global_leg_names[i_stance] == 'LLeg':
+                                q_stance = footstep_vectors[0][0]
                             else:
-                                q_stance = debug[0][1]
+                                q_stance = footstep_vectors[0][1]
                         else:
-                            print " stance foot [",i_stance,"]=",globalLegNames[i_stance]," same as first unchangeable?"
-                            print "         ",currentUnchangeable[0][0]
+                            print " stance foot [",i_stance,"]=",global_leg_names[i_stance]," same as first unchangeable?"
+                            print "         ",current_unchangeable[0][0]
 
                         # Covert global plan into relative local footsteps for update
                         # Apply correction if (and only if) first unchangeable = stance foot
-                        localLegNames, localFootSteps, localTimeList = \
-                                getLocalPlan(globalLegNames, globalFootSteps, globalTimeList,
-                                             i_stance, q_stance, startIndex, endIndex)
+                        local_leg_names, local_footsteps, local_time_list = \
+                                get_local_plan(global_leg_names, global_footsteps, global_time_list,
+                                             i_stance, q_stance, start_index, end_index)
 
                         # Send update steps to the robot
-                        motionProxy.setFootSteps(
-                            localLegNames,
-                            localFootSteps,
-                            localTimeList,
+                        motion_proxy.setFootSteps(
+                            local_leg_names,
+                            local_footsteps,
+                            local_time_list,
                             True
                         )
-<<<<<<< HEAD
-                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ', globalFootSteps[startIndex]
-=======
 
-                        print "  i_stance=",i_stance," footstep_count=",footstep_count, " length unchangeable=",len(debug[1])
-                        print '     New plan sent [',startIndex,', ',endIndex,'] - first step ',
-                        print localLegNames
-                        print localFootSteps
-                        print localTimeList
->>>>>>> conner_devel
+                        print "  i_stance=",i_stance," footstep_count=",footstep_count, " length unchangeable=",len(footstep_vectors[1])
+                        print '     New plan sent [',start_index,', ',end_index,'] - first step ',
+                        print local_leg_names
+                        print local_footsteps
+                        print local_time_list
                         plan_sent_flag = True
 
                 if verbose or plan_sent_flag:
                     elapsed_time = time.time() - time_start
 
-                    print 'Current velocity:', motionProxy.getRobotVelocity()
-                    writeCSVFootstepsExecuted(file_writer, debug, cnt, elapsed_time,
-                                              currentRobotPose, update_flag,
-                                              verbose, plan_sent_flag, startIndex,
-                                              endIndex, localLegNames[0],
+                    print 'Current velocity:', motion_proxy.getRobotVelocity()
+                    write_CSV_footsteps_executed(file_writer, footstep_vectors, cnt, elapsed_time,
+                                              current_robot_pose, update_flag,
+                                              verbose, plan_sent_flag, start_index,
+                                              end_index, local_leg_names[0],
                                               footstep_count,i_stance,
-                                              globalLegNames[i_stance], step_time_remaining
+                                              global_leg_names[i_stance], step_time_remaining
                                               )
 
 
-            if (len(debug[1]) == 0 and len(debug[2]) == 0):
+            if (len(footstep_vectors[1]) == 0 and len(footstep_vectors[2]) == 0):
                 # Stop the loop, as there are no footsteps left
                 run_flag = False
 
@@ -427,18 +423,18 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
 
     #
     print ' wait for move to finish ... '
-    motionProxy.waitUntilMoveIsFinished()
+    motion_proxy.waitUntilMoveIsFinished()
 
     # Get final data after walking is verified finished
     print ' get final data and write the summary file ...'
     file_writer = None
     file_obj.close()
-    endRobotPosition = motionProxy.getRobotPosition(useSensorValues)
-    endRobotPose = almath.Pose2D(motionProxy.getRobotPosition(useSensorValues))
+    end_robot_position = motion_proxy.getRobotPosition(use_sensor_values)
+    end_robot_pose = almath.Pose2D(motion_proxy.getRobotPosition(use_sensor_values))
     #init frame calc
-    robotMove = almath.pose2DInverse(initRobotPose)*endRobotPose
-    print '    Robot Move:', robotMove
-    print '    End Robot Position:', endRobotPosition
+    robot_move = almath.pose2DInverse(init_robot_pose)*end_robot_pose
+    print '    Robot Move:', robot_move
+    print '    End Robot Position:', end_robot_position
     with open(experiment_dir+"/"+test_dir+"/drift.csv", 'w+') as csvFile:
         writer = csv.writer(csvFile, delimiter=',')
         writer.writerow([test_dir])
@@ -446,20 +442,20 @@ def main(robotIP, PORT=9559, desired_distance=0.5, rho=None):
                          'Final x'  , 'Final y'  , 'Final theta',
                          'Delta x'  , 'Delta y'  , 'Delta theta'])
         writer.writerow([init_robot_position[0], init_robot_position[1],
-        init_robot_position[2], endRobotPosition[0], endRobotPosition[1],
-        endRobotPosition[2], robotMove.x, robotMove.y, robotMove.theta])
-    writeSummaryCSV([
-        len(globalFootSteps),
-        globalTimeList[0],
+        init_robot_position[2], end_robot_position[0], end_robot_position[1],
+        end_robot_position[2], robot_move.x, robot_move.y, robot_move.theta])
+    write_summary_CSV([
+        len(global_footsteps),
+        global_time_list[0],
         cnt,
         init_robot_position,
-        endRobotPosition,
-        robotMove
+        end_robot_position,
+        robot_move
     ], experiment_dir, test_dir)
 
     # Robot to crouch position
     print '  Move robot to rest position ... '
-    motionProxy.rest()
+    motion_proxy.rest()
     plotter(experiment_dir, test_dir)
 
 if __name__ == "__main__":

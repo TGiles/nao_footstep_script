@@ -100,7 +100,7 @@ def  next_step(xb,yb,theta,feet_separation,LegFlag):
 #     q0 = initial configuration of body
 #     qStance = stance foot pose in same frame as q0
 
-def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
+def create_global_plan(desired_distance, time_between_step, vb, wb, \
                      feet_separation, startLeg='RLeg',q0=None, qStance = None):
     LegFlag = None
     LegName = None
@@ -146,18 +146,18 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
     footstepList.append(qStance)
 
 
-    limit_distance =  desired_distance - 0.5*timeBetweenStep*vb
+    limit_distance =  desired_distance - 0.5*time_between_step*vb
 
     while distance_traveled < limit_distance:
         # Move to next reference point
-        xb,yb,theta,increment = next_point(xb,yb,theta,vb,wb,timeBetweenStep)
+        xb,yb,theta,increment = next_point(xb,yb,theta,vb,wb,time_between_step)
         distance_traveled += increment
 
         # Calculate proper foot position
         LegFlag,leg,step = next_step(xb,yb,theta,feet_separation,LegFlag)
 
         # Update the vectors
-        startTime += timeBetweenStep
+        startTime += time_between_step
         timeList.append(startTime)
         legList.append(leg)
         footstepList.append(step)
@@ -165,7 +165,7 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
     # At the end of the walking, add another 1/2 step to bring legs together
     #   keep same reference point, just bring other foot up
     LegFlag,leg,step = next_step(xb,yb,theta,feet_separation,LegFlag)
-    startTime += timeBetweenStep # calcuate postion on 1/2 step, but assume slow finish
+    startTime += time_between_step # calcuate postion on 1/2 step, but assume slow finish
     timeList.append(startTime)
     legList.append(leg)
     footstepList.append(step)
@@ -173,7 +173,7 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
     return [legList, footstepList, timeList]
 
 
-def writeGlobalPlan(leg_array, footstep_array, time_array, experiment_dir, test_dir, filename='global-plan.csv' ):
+def write_global_plan(leg_array, footstep_array, time_array, experiment_dir, test_dir, filename='global-plan.csv' ):
     with open(experiment_dir+'/'+ test_dir + '/'+filename, 'w+') as csvFile:
         writer = csv.writer(csvFile, delimiter=',')
         writer.writerow([test_dir])
@@ -183,7 +183,7 @@ def writeGlobalPlan(leg_array, footstep_array, time_array, experiment_dir, test_
             writer.writerow([ leg_array[x], time_array[x], footstep_array[x][0], footstep_array[x][1], footstep_array[x][2] ])
 
 
-def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
+def get_local_plan(global_leg_name, global_footsteps, global_time_list, \
                          iStance, qStance, startIndex, endIndex):
 
     # Stance foot in internal world frame
@@ -192,9 +192,9 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
         Tstance =transform2D(qStance[0],qStance[1],qStance[2])
 
         # Corresponding stance foot in plan
-        Tplan   = transform2D(globalFootSteps[iStance][0],
-                              globalFootSteps[iStance][1],
-                              globalFootSteps[iStance][2])
+        Tplan   = transform2D(global_footsteps[iStance][0],
+                              global_footsteps[iStance][1],
+                              global_footsteps[iStance][2])
 
 
         Ti = np.linalg.inv(Tplan)
@@ -212,9 +212,9 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
             qError = (0., 0., 0.)
 
     # Get pose of the last unchangeable (startIndex > 0 assumed)
-    Tprior   = transform2D(globalFootSteps[startIndex-1][0],
-                           globalFootSteps[startIndex-1][1],
-                           globalFootSteps[startIndex-1][2])
+    Tprior   = transform2D(global_footsteps[startIndex-1][0],
+                           global_footsteps[startIndex-1][1],
+                           global_footsteps[startIndex-1][2])
     Ti = np.linalg.inv(Tprior)
 
     localLegName=[]
@@ -228,9 +228,9 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
     print "  iStance=",iStance
 
     for ndx in range(startIndex,endIndex):
-        Tnext = transform2D(globalFootSteps[ndx][0],
-                            globalFootSteps[ndx][1],
-                            globalFootSteps[ndx][2])
+        Tnext = transform2D(global_footsteps[ndx][0],
+                            global_footsteps[ndx][1],
+                            global_footsteps[ndx][2])
 
         Trelative = np.dot(Ti,Tnext)
         Ti = np.linalg.inv(Tnext) # update for the next calc
@@ -243,49 +243,49 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
         #qRelative[1] += fraction*qError[1]
         #qRelative[2] += fraction*qError[2]
 
-        localLegName.append(globalLegName[ndx])
-        localTimeList.append(globalTimeList[ndx])
+        localLegName.append(global_leg_name[ndx])
+        localTimeList.append(global_time_list[ndx])
         localFootSteps.append(qRelative)
 
         dist = np.sqrt(qRelative[0]*qRelative[0] + qRelative[1]*qRelative[1])
-        print "  relative step = ",qRelative, " leg=",globalLegName[ndx], " ndx=",ndx," dist=",dist
+        print "  relative step = ",qRelative, " leg=",global_leg_name[ndx], " ndx=",ndx," dist=",dist
 
     return (localLegName, localFootSteps, localTimeList)
 
-
-def createLocalPlanFromGlobal(legList, footstepList, timeList):
-    length = len(legList)
-    LegFlag = None
-    _legList = []
-    _footstepList = []
-    _timeList = []
-    y_value = footstepList[0][1]
-    if legList[0] == 'RLeg':
-        LegFlag = 0
-    else:
-        LegFlag = 1
-    for it in range(0, length):
-        x = 0
-        if LegFlag == 0:
-            _legList.append('RLeg')
-            if it == 0:
-                x = footstepList[it][0]
-                theta = footstepList[it][0]
-                _footstepList.append([x, -y_value, theta])
-            else:
-                x = footstepList[it][0] - footstepList[it-1][0]
-                theta = footstepList[it][2] - footstepList[it-1][2]
-                _footstepList.append([x, -y_value, theta])
-            LegFlag = 1
-        elif LegFlag == 1:
-            _legList.append('LLeg')
-            if it == 0:
-                x = footstepList[it][0]
-                theta = footstepList[it][0]
-                _footstepList.append([x, -y_value, theta])
-            else:
-                x = footstepList[it][0] - footstepList[it-1][0]
-                theta = footstepList[it][2] - footstepList[it-1][2]
-                _footstepList.append([x, y_value, theta])
-            LegFlag = 0
-    return [_legList, _footstepList, timeList]
+# TODO Determine whether or not to delete this code
+# def createLocalPlanFromGlobal(legList, footstepList, timeList):
+#     length = len(legList)
+#     LegFlag = None
+#     _legList = []
+#     _footstepList = []
+#     _timeList = []
+#     y_value = footstepList[0][1]
+#     if legList[0] == 'RLeg':
+#         LegFlag = 0
+#     else:
+#         LegFlag = 1
+#     for it in range(0, length):
+#         x = 0
+#         if LegFlag == 0:
+#             _legList.append('RLeg')
+#             if it == 0:
+#                 x = footstepList[it][0]
+#                 theta = footstepList[it][0]
+#                 _footstepList.append([x, -y_value, theta])
+#             else:
+#                 x = footstepList[it][0] - footstepList[it-1][0]
+#                 theta = footstepList[it][2] - footstepList[it-1][2]
+#                 _footstepList.append([x, -y_value, theta])
+#             LegFlag = 1
+#         elif LegFlag == 1:
+#             _legList.append('LLeg')
+#             if it == 0:
+#                 x = footstepList[it][0]
+#                 theta = footstepList[it][0]
+#                 _footstepList.append([x, -y_value, theta])
+#             else:
+#                 x = footstepList[it][0] - footstepList[it-1][0]
+#                 theta = footstepList[it][2] - footstepList[it-1][2]
+#                 _footstepList.append([x, y_value, theta])
+#             LegFlag = 0
+#     return [_legList, _footstepList, timeList]
