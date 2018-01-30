@@ -118,10 +118,20 @@ def createGlobalPlan(desired_distance, timeBetweenStep, vb, wb, \
     # Define the starting point of the body position
     xb,yb,theta = (0.0,0.0,0.0)
     if (q0 is not None):
+        print "  plan from given start pose=",q0
         xb,yb,theta = q0
+        if (qStance is None):
+            dummy,leg, qStance = next_step(xb,yb,theta,feet_separation,LegFlag)
+            print "  set qStance if not given =",qStance
+        else:
+            print "  given qStance =",qStance, " with defined body pose"
     else:
         print "Set initial stance foot pose relative to origin ..."
-        qStance =(0.0, dist, 0.0)
+        if (qStance is None):
+            qStance =(0.0, dist, 0.0)
+            print "  set qStance if not given =",qStance
+        else:
+            print "  given qStance =",qStance, " with initial body at origin"
 
     timeList = []
     legList = []
@@ -177,27 +187,29 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
                          iStance, qStance, startIndex, endIndex):
 
     # Stance foot in internal world frame
-    Tstance =transform2D(qStance[0],qStance[1],qStance[2])
+    qError = (0., 0., 0.)
+    if (qStance is not None):
+        Tstance =transform2D(qStance[0],qStance[1],qStance[2])
 
-    # Corresponding stance foot in plan
-    Tplan   = transform2D(globalFootSteps[iStance][0],
-                          globalFootSteps[iStance][1],
-                          globalFootSteps[iStance][2])
+        # Corresponding stance foot in plan
+        Tplan   = transform2D(globalFootSteps[iStance][0],
+                              globalFootSteps[iStance][1],
+                              globalFootSteps[iStance][2])
 
 
-    Ti = np.linalg.inv(Tplan)
+        Ti = np.linalg.inv(Tplan)
 
-    # Put actual stance in the plan stance frame (this is accumulated error)
-    Terror = np.dot(Ti,Tstance)
+        # Put actual stance in the plan stance frame (this is accumulated error)
+        Terror = np.dot(Ti,Tstance)
 
-    qError = (Terror[0][2],Terror[1][2],np.arctan2(Terror[1][0],Terror[0][0]))
-    print " Step Error = ",qError
+        qError = (Terror[0][2],Terror[1][2],np.arctan2(Terror[1][0],Terror[0][0]))
+        print " Step Error = ",qError
 
-    # Should sanity check this error
-    err = np.sqrt(qError[0]*qError[0] + qError[1]*qError[1])
-    if (err > 0.06 or np.abs(qError[2]) > 0.2):
-        print "     error is large - err=",err," -- ignore correction!"
-        qError = (0., 0., 0.)
+        # Should sanity check this error
+        err = np.sqrt(qError[0]*qError[0] + qError[1]*qError[1])
+        if (err > 0.06 or np.abs(qError[2]) > 0.2):
+            print "     error is large - err=",err," -- ignore correction!"
+            qError = (0., 0., 0.)
 
     # Get pose of the last unchangeable (startIndex > 0 assumed)
     Tprior   = transform2D(globalFootSteps[startIndex-1][0],
@@ -213,6 +225,8 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
     if (endIndex > startIndex):
         fraction = 1.0/(endIndex-startIndex)
 
+    print "  iStance=",iStance
+
     for ndx in range(startIndex,endIndex):
         Tnext = transform2D(globalFootSteps[ndx][0],
                             globalFootSteps[ndx][1],
@@ -225,16 +239,16 @@ def getLocalPlan(globalLegName, globalFootSteps, globalTimeList, \
         qRelative = [Trelative[0][2],Trelative[1][2],np.arctan2(Trelative[1][0],Trelative[0][0])]
 
         # Apply a portion of correction to each step
-        qRelative[0] += fraction*qError[0]
-        qRelative[1] += fraction*qError[1]
-        qRelative[2] += fraction*qError[2]
+        #qRelative[0] += fraction*qError[0]
+        #qRelative[1] += fraction*qError[1]
+        #qRelative[2] += fraction*qError[2]
 
         localLegName.append(globalLegName[ndx])
         localTimeList.append(globalTimeList[ndx])
         localFootSteps.append(qRelative)
 
         dist = np.sqrt(qRelative[0]*qRelative[0] + qRelative[1]*qRelative[1])
-        print "  relative step = ",qRelative, " dist=",dist
+        print "  relative step = ",qRelative, " leg=",globalLegName[ndx], " ndx=",ndx," dist=",dist
 
     return (localLegName, localFootSteps, localTimeList)
 
