@@ -2,7 +2,7 @@ Instructions:
 1. Start up NAO by holding chest button
 2. Once lights turn on, release chest button
 3. NAO is ready when he says "OUNAK OUGH" (phonetically)
-4. Press chest button to determine IP. Should be 192.168.10.x
+4. Press chest button to determine IP.
 5. cd to nao_footstep_script location
 6. Run the following command (--ip is determined by step 4) :
 <pre>
